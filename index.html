@@ -1,0 +1,5468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<meta content="#FF6B3D" name="theme-color"/>
+
+<!-- FAVICONS (RealFaviconGenerator) -->
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="manifest" href="/site.webmanifest" />
+
+<!-- ✅ IOS SPECIFIC META TAGS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Seva">
+
+<!-- ✅ MICROSOFT TILES -->
+<meta name="msapplication-TileColor" content="#1E3A5F">
+<meta name="msapplication-config" content="none">
+
+<title>Seva - Food Donation Platform</title>
+<!-- Rest of your existing <style> tags -->
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #E8EFF5; }
+    .hide { display: none !important; }
+    .btn-primary {
+      background: #1E3A5F; color: white; padding: 14px 32px; border-radius: 50px;
+      font-weight: 600; border: none; cursor: pointer; transition: all 0.3s; width: 100%;
+    }
+    .btn-primary:active { transform: scale(0.95); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: white; color: #FF6B3D; padding: 14px 32px; border-radius: 50px;
+      font-weight: 600; border: 2px solid #FF6B3D; cursor: pointer; width: 100%;
+    }
+    .btn-chat {
+      background: #25D366; color: white; padding: 8px 16px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; border: none; cursor: pointer; position: relative;
+    }
+    .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 16px; }
+    .tab-active { border-bottom: 3px solid #FF6B3D; color: #FF6B3D; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .badge-posted { background: #E3F2FD; color: #1565C0; }
+    .badge-accepted { background: #FFF3E0; color: #E65100; }
+    .badge-picked_up { background: #F3E5F5; color: #7B1FA2; }
+    .badge-delivered { background: #E8F5E9; color: #2E7D32; }
+    .badge-veg { background: #E8F5E9; color: #2E7D32; }
+    .badge-nonveg { background: #FFEBEE; color: #C62828; }
+    #map, #location-map, #inline-pickup-map { height: 400px; width: 100%; border-radius: 12px; }
+    .reward-card { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: white; }
+    .status-tracker { display: flex; justify-content: space-between; margin: 20px 0; position: relative; }
+    .status-step { flex: 1; text-align: center; position: relative; }
+    .status-step::before { content: ''; position: absolute; top: 20px; left: 50%; right: -50%; height: 2px; background: #e0e0e0; z-index: 0; }
+    .status-step:last-child::before { display: none; }
+    .status-dot { width: 40px; height: 40px; border-radius: 50%; background: #e0e0e0; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+    .status-step.active .status-dot { background: #4CAF50; color: white; }
+    .status-step.completed .status-dot { background: #2E7D32; color: white; }
+    .notification-badge { position: absolute; top: -5px; right: -5px; background: #FF6B3D; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    .distance-badge { background: #E3F2FD; color: #1565C0; padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+    .chat-container { max-height: 400px; overflow-y: auto; padding: 12px; background: #f5f5f5; border-radius: 12px; margin-bottom: 12px; }
+    .chat-message { margin-bottom: 12px; padding: 8px 12px; border-radius: 12px; max-width: 70%; word-wrap: break-word; }
+    .chat-message.sent { background: #DCF8C6; margin-left: auto; text-align: right; }
+    .chat-message.received { background: white; }
+    .chat-time { font-size: 10px; color: #666; margin-top: 4px; }
+    .unread-badge { background: #25D366; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px; }
+    .location-option { padding: 12px; border: 2px solid #e0e0e0; border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.3s; }
+    .location-option:hover { border-color: #FF6B3D; background: #FFF5F2; }
+    .location-option.selected { border-color: #FF6B3D; background: #FFF5F2; }
+    .pickup-btn { padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 12px; background: white; cursor: pointer; transition: all 0.3s; font-size: 14px; font-weight: 500; }
+    .pickup-btn:hover { border-color: #FF6B3D; background: #FFF5F2; }
+    .pickup-btn.selected { border-color: #FF6B3D; background: #FFF5F2; }
+    .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #FF6B3D; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+    
+
+/* ✨ NEW: Enhanced spinner for maps */
+.map-loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.map-loading-text {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+  animation: fadeInOut 1.5s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    .notification-toast {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      max-width: 350px;
+      z-index: 1000;
+      animation: slideIn 0.3s ease-out;
+      border-left: 4px solid #FF6B3D;
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    .notification-toast.hide {
+      animation: slideOut 0.3s ease-out forwards;
+    }
+    
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(400px); opacity: 0; }
+    }
+    
+    .notification-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .notification-title {
+      font-weight: 600;
+      color: #1E3A5F;
+      font-size: 14px;
+    }
+    
+    .notification-close {
+      cursor: pointer;
+      color: #999;
+      font-size: 20px;
+      line-height: 1;
+    }
+    
+    .notification-body {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.4;
+    }
+    
+    .notification-time {
+      font-size: 11px;
+      color: #999;
+      margin-top: 8px;
+    }
+    
+    .deliver-self-option {
+      background: #E8F5E9;
+      border: 2px solid #4CAF50;
+      padding: 12px;
+      border-radius: 12px;
+      margin-top: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .deliver-self-option:hover {
+      background: #C8E6C9;
+    }
+    
+    .deliver-self-option input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    
+    .error-message {
+      background: #FFEBEE;
+      color: #C62828;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    
+    .realtime-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #E8F5E9;
+      color: #2E7D32;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    
+    .realtime-dot {
+      width: 8px;
+      height: 8px;
+      background: #4CAF50;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .preference-selector {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    
+    .preference-option {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+    }
+    
+    .preference-option:hover {
+      border-color: #FF6B3D;
+      background: #FFF5F2;
+    }
+    
+    .preference-option.selected {
+      border-color: #4CAF50;
+      background: #E8F5E9;
+    }
+    
+    .preference-option input[type="checkbox"] {
+      display: none;
+    }
+    
+    .unique-id-display {
+      background: #E3F2FD;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      color: #1565C0;
+      text-align: center;
+      font-weight: 600;
+    }
+    
+.info-box {
+      background: #FFF3E0;
+      border-left: 4px solid #FF6B3D;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+    
+/* 🆕 Directions button styling */
+    .directions-btn {
+      background: #4285F4;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s;
+    }
+
+    .directions-btn:hover {
+      background: #1967D2;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+    }
+
+    .directions-btn:active {
+      transform: translateY(0);
+    }
+
+/* 🆕 Call button styling */
+.call-btn {
+  background: #34C759;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s;
+  text-decoration: none;
+}
+
+.call-btn:hover {
+  background: #28A745;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
+}
+
+.call-btn:active {
+  transform: translateY(0);
+}
+
+
+
+
+    /* ✅ NEW: Enhanced datetime input styling */
+    input[type="datetime-local"] {
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+    }
+
+    input[type="datetime-local"]:invalid {
+      border-color: #C62828 !important;
+      background-color: #FFEBEE;
+    }
+
+    input[type="datetime-local"]:valid {
+      border-color: #4CAF50 !important;
+      background-color: #E8F5E9;
+    }
+
+    input[type="datetime-local"]:focus:valid {
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+
+    input[type="datetime-local"]:focus:invalid {
+      box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.2);
+    }
+/* ✅ NEW CSS STARTS HERE - Add this entire block */
+    /* ✅ Enhanced expiry input validation styling */
+    input[type="datetime-local"].invalid-time {
+      border-color: #C62828 !important;
+      background-color: #FFEBEE !important;
+      animation: shake 0.3s;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    
+    input[type="datetime-local"].valid-time {
+      border-color: #4CAF50 !important;
+      background-color: #E8F5E9 !important;
+    }
+ /* Enhanced tracking animations */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.animated-route {
+  animation: dash 2s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+/* Filter tabs */
+.filter-tab {
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.filter-tab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* History search */
+#history-search:focus {
+  box-shadow: 0 0 0 3px rgba(255, 107, 61, 0.2);
+}
+
+/* Responsive tracking cards */
+@media (max-width: 640px) {
+  .status-tracker {
+    font-size: 10px;
+  }
+  
+  .status-dot {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+}
+  </style>
+</head>
+<body>
+<!-- Welcome Screen -->
+<div class="min-h-screen flex items-center justify-center p-4" id="welcome-screen">
+<div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md text-center">
+<div class="w-24 h-24 bg-orange-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+<span class="text-4xl">❤️</span>
+</div>
+<h1 class="text-5xl font-bold mb-3" style="color: #1E3A5F;">seva</h1>
+<p class="text-lg text-gray-600 mb-8">Nourish. Connect. Share.</p>
+<div class="space-y-4">
+<button class="btn-primary" onclick="showLogin()">Login</button>
+<button class="btn-secondary" onclick="showRegister()">Join Now</button>
+</div>
+</div>
+</div>
+
+<!-- Login Screen -->
+<div class="hide min-h-screen flex items-center justify-center p-4" id="login-screen">
+<div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+<button class="text-gray-600 mb-6" onclick="backToWelcome()">← Back</button>
+<h2 class="text-3xl font-bold mb-6" style="color: #1E3A5F;">Login</h2>
+<div class="space-y-4">
+<div>
+<label class="block text-sm font-semibold mb-2">Login Method</label>
+<select class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 outline-none mb-3" id="login-method" onchange="toggleLoginMethod()">
+<option value="phone">Mobile Number</option>
+<option value="unique_id">Unique ID (Beneficiary)</option>
+</select>
+</div>
+<div id="phone-login-field">
+<label class="block text-sm font-semibold mb-2">Mobile Number *</label>
+<input class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 outline-none" id="login-phone" maxlength="10" placeholder="9876543210" type="tel"/>
+</div>
+<div id="unique-id-login-field" class="hide">
+<label class="block text-sm font-semibold mb-2">Unique ID *</label>
+<input class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 outline-none" id="login-unique-id" placeholder="Enter your unique ID" type="text"/>
+</div>
+<button class="btn-primary" id="login-btn" onclick="login()">Login</button>
+<div class="hide" id="login-loading">
+<div class="loading-spinner"></div>
+<p class="text-center text-gray-600 text-sm">Logging in...</p>
+</div>
+<div class="hide error-message" id="login-error"></div>
+</div>
+</div>
+</div>
+
+<!-- Register Screen -->
+<div class="hide min-h-screen p-4 overflow-y-auto" id="register-screen">
+<div class="max-w-md mx-auto bg-white rounded-3xl shadow-2xl p-8 my-8">
+<button class="text-gray-600 mb-6" onclick="backToWelcome()">← Back</button>
+<h2 class="text-3xl font-bold mb-6" style="color: #1E3A5F;">Create Account</h2>
+<div class="space-y-4">
+<div>
+<label class="block text-sm font-semibold mb-2">I am a: *</label>
+<select class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 outline-none" id="reg-role" onchange="toggleRegistrationFields()">
+<option value="donor">Donor (I have food to donate)</option>
+<option value="volunteer">Volunteer (I can deliver food)</option>
+<option value="beneficiary">Beneficiary (I need food)</option>
+</select>
+</div>
+<div class="hide" id="beneficiary-type-field">
+<label class="block text-sm font-semibold mb-2">Beneficiary Type:</label>
+<select class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 outline-none" id="beneficiary-type">
+<option value="individual">Individual/Family</option>
+<option value="ngo">NGO</option>
+<option value="community_center">Community Center</option>
+<option value="shelter">Shelter</option>
+</select>
+</div>
+<div class="hide" id="food-preference-field">
+<label class="block text-sm font-semibold mb-2">Food Preference: *</label>
+<div class="preference-selector">
+<div class="preference-option" id="pref-veg" onclick="toggleFoodPreference('veg')">
+<input type="checkbox" id="pref-veg-checkbox"/>
+<div class="text-2xl mb-1">🥬</div>
+<div class="text-sm font-semibold">Veg</div>
+</div>
+<div class="preference-option" id="pref-nonveg" onclick="toggleFoodPreference('nonveg')">
+<input type="checkbox" id="pref-nonveg-checkbox"/>
+<div class="text-2xl mb-1">🍗</div>
+<div class="text-sm font-semibold">Non-Veg</div>
+</div>
+</div>
+<div class="text-xs text-gray-600 mt-2">Select the type(s) of food you can accept</div>
+</div>
+<div>
+<label class="block text-sm font-semibold mb-2">Full Name *</label>
+<input class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 outline-none" id="reg-name" placeholder="Your Name" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-semibold mb-2"><span id="phone-label">Mobile Number *</span></label>
+<input class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 outline-none" id="reg-phone" maxlength="10" placeholder="9876543210" type="tel"/>
+</div>
+<div>
+<label class="block text-sm font-semibold mb-2">Select Your Location *</label>
+<button class="w-full p-3 border-2 border-gray-200 rounded-xl hover:border-orange-400 text-left transition" onclick="showLocationPicker('registration')" type="button">
+<span id="location-text">📍 Set Your Location</span>
+</button>
+<input id="reg-lat" type="hidden"/>
+<input id="reg-lng" type="hidden"/>
+<input id="reg-address" type="hidden"/>
+</div>
+<div>
+<label class="block text-sm font-semibold mb-2">Username *</label>
+<input class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 outline-none" id="reg-username" placeholder="Choose a username" type="text"/>
+</div>
+<div class="hide" id="unique-id-field">
+<label class="block text-sm font-semibold mb-2">Your Unique ID</label>
+<div class="unique-id-display" id="generated-unique-id">ID will be generated upon registration</div>
+<div class="info-box">
+<strong>⚠️ Important:</strong> Save this ID safely! You'll need it to login since phone number is optional for beneficiaries.
+</div>
+</div>
+<button class="btn-primary" onclick="register()">Create Account</button>
+<div class="hide error-message" id="register-error"></div>
+</div>
+</div>
+</div>
+
+<!-- Location Modal -->
+<div class="hide fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" id="location-modal">
+<div class="bg-white rounded-2xl p-4 w-full max-w-2xl" style="max-height: 85vh;">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-xl font-bold" style="color: #1E3A5F;">Select Location</h2>
+<button class="text-2xl text-gray-400" onclick="closeLocationPicker()">×</button>
+</div>
+<button class="w-full p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 mb-3" onclick="useCurrentLocation()">
+        📍 Use Current Location (High Accuracy)
+      </button>
+<div id="location-map" style="height: 300px; width: 100%; border-radius: 12px; margin-bottom: 12px;"></div>
+<div class="text-sm text-gray-600 mb-2" id="location-status"></div>
+<button class="btn-primary" disabled="" id="confirm-location-btn" onclick="confirmLocation()">
+        ✅ Confirm Location
+      </button>
+</div>
+</div>
+
+<!-- Chat Modal -->
+<div class="hide fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" id="chat-modal">
+<div class="bg-white rounded-2xl p-4 w-full max-w-md" style="max-height: 85vh; display: flex; flex-direction: column;">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-xl font-bold" id="chat-user-name" style="color: #1E3A5F;">Chat</h2>
+<button class="text-2xl text-gray-400" onclick="closeChatModal()">×</button>
+</div>
+<div class="chat-container flex-1" id="chat-messages"></div>
+<div class="flex gap-2">
+<input class="flex-1 p-3 border-2 border-gray-200 rounded-xl outline-none" id="chat-input" onkeypress="if(event.key==='Enter') sendMessage()" placeholder="Type a message..." type="text"/>
+<button class="bg-blue-500 text-white px-4 rounded-xl" onclick="sendMessage()">Send</button>
+</div>
+</div>
+</div>
+
+<!-- Beneficiary Selection Modal -->
+<div class="hide fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" id="beneficiary-modal">
+<div class="bg-white rounded-2xl p-4 w-full max-w-2xl" style="max-height: 85vh; overflow-y: auto;">
+<div class="flex justify-between items-center mb-3">
+<h2 class="text-xl font-bold" style="color: #1E3A5F;">Choose Beneficiary</h2>
+<button class="text-2xl text-gray-400" onclick="closeBeneficiaryModal()">×</button>
+</div>
+<div class="space-y-2" id="beneficiary-list-modal"></div>
+<div class="flex gap-3 mt-3">
+<button class="flex-1 btn-secondary" onclick="closeBeneficiaryModal()">Cancel</button>
+<button class="flex-1 btn-primary" disabled="" id="confirm-beneficiary-btn" onclick="confirmBeneficiarySelection()">Accept Donation</button>
+</div>
+</div>
+</div>
+
+<!-- Notification Container -->
+<div id="notification-container"></div>
+
+<!-- Main App -->
+<div class="hide min-h-screen pb-20" id="main-app">
+<header class="p-4 sticky top-0 z-50 shadow-lg" style="background: #1E3A5F; color: white;">
+<div class="flex items-center justify-between max-w-6xl mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-2xl">❤️</div>
+<div>
+<h2 class="font-bold text-lg" id="user-name">Welcome</h2>
+<p class="text-xs opacity-90" id="user-role">User</p>
+</div>
+</div>
+<button class="text-sm bg-white/20 px-4 py-2 rounded-full" onclick="logout()">Logout</button>
+</div>
+</header>
+<div class="max-w-6xl mx-auto p-4">
+<div class="grid grid-cols-3 gap-3 mb-6">
+<div class="card text-center p-3">
+<div class="text-2xl font-bold text-orange-600" id="stat-donations">0</div>
+<div class="text-xs text-gray-600">Donations</div>
+</div>
+<div class="card text-center p-3">
+<div class="text-2xl font-bold text-green-600" id="stat-deliveries">0</div>
+<div class="text-xs text-gray-600">Deliveries</div>
+</div>
+<div class="card text-center p-3">
+<div class="text-2xl font-bold text-blue-600" id="stat-benefited">0</div>
+<div class="text-xs text-gray-600">People Served</div>
+</div>
+</div>
+<div class="reward-card p-4 mb-6 rounded-xl">
+<div class="flex items-center justify-between">
+<div>
+<div class="text-sm opacity-90">Total Rewards</div>
+<div class="text-3xl font-bold" id="total-rewards">0</div>
+<div class="text-xs opacity-75">points earned</div>
+</div>
+<div class="text-5xl">🏆</div>
+</div>
+</div>
+<div id="content-area"></div>
+</div>
+<nav class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
+<div class="flex justify-around max-w-6xl mx-auto">
+<button class="flex-1 py-4 text-center tab-active relative" id="tab-home" onclick="showTab('home')">
+<div class="text-2xl mb-1">🏠</div>
+<div class="text-xs font-semibold">Home</div>
+</button>
+<button class="flex-1 py-4 text-center text-gray-600 relative" id="tab-nearby" onclick="showTab('nearby')">
+<div class="text-2xl mb-1">📍</div>
+<div class="text-xs">Nearby</div>
+<span class="notification-badge hide" id="nearby-badge">0</span>
+</button>
+<button class="flex-1 py-4 text-center text-gray-600 relative" id="tab-tracking" onclick="showTab('tracking')">
+<div class="text-2xl mb-1">🚚</div>
+<div class="text-xs">Tracking</div>
+</button>
+<button class="flex-1 py-4 text-center text-gray-600" id="tab-history" onclick="showTab('history')">
+<div class="text-2xl mb-1">📜</div>
+<div class="text-xs">History</div>
+</button>
+</div>
+</nav>
+</div>
+
+<!-- Create Donation Modal -->
+<div class="hide fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" id="create-modal">
+<div class="bg-white rounded-2xl p-6 w-full max-w-md" style="max-height: 85vh; overflow-y: auto;">
+<h2 class="text-2xl font-bold mb-4" style="color: #1E3A5F;">Create Donation</h2>
+<div class="space-y-3">
+<div>
+<label class="block text-sm font-semibold mb-2">Food Type *</label>
+<input class="w-full p-3 border-2 border-gray-200 rounded-xl outline-none" id="food-type" placeholder="e.g., Rice, Dal, Vegetables" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-semibold mb-2">Category *</label>
+<div class="flex gap-4">
+<label class="flex items-center">
+<input checked="" class="mr-2" name="food-category" type="radio" value="veg"/>
+<span class="badge badge-veg">🥬 Veg</span>
+</label>
+<label class="flex items-center">
+<input class="mr-2" name="food-category" type="radio" value="nonveg"/>
+<span class="badge badge-nonveg">🍗 Non-Veg</span>
+</label>
+</div>
+</div>
+<div class="flex gap-2">
+<div class="flex-1">
+<label class="block text-sm font-semibold mb-2">Quantity *</label>
+<input class="w-full p-3 border-2 border-gray-200 rounded-xl outline-none" id="food-quantity" min="1" placeholder="Amount" type="number"/>
+</div>
+<div class="w-32">
+<label class="block text-sm font-semibold mb-2">Unit *</label>
+<select class="w-full p-3 border-2 border-gray-200 rounded-xl outline-none" id="food-unit">
+<option>kg</option>
+<option>plates</option>
+<option>servings</option>
+</select>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold mb-2">Expiry Time *</label>
+<input class="w-full p-3 border-2 border-gray-200 rounded-xl outline-none" id="food-expiry" type="datetime-local"/>
+</div>
+<div>
+<label class="block text-sm font-semibold mb-2">Select Beneficiary (optional)</label>
+<select class="w-full p-3 border-2 border-gray-200 rounded-xl outline-none" id="food-beneficiary">
+<option value="">Select beneficiary...</option>
+</select>
+</div>
+<div>
+<label class="block text-sm font-semibold mb-2">Notes</label>
+<textarea class="w-full p-3 border-2 border-gray-200 rounded-xl outline-none" id="food-instructions" placeholder="Any special instructions..." rows="2"></textarea>
+</div>
+<div>
+<label class="block text-sm font-semibold mb-2">Pickup Location *</label>
+<div class="grid grid-cols-3 gap-2 mb-2">
+<button class="pickup-btn text-center" id="pickup-btn-current" onclick="selectPickupMethod('current')" type="button">
+<div class="text-xl mb-1">📍</div>
+<div class="text-xs">Current</div>
+</button>
+<button class="pickup-btn text-center" id="pickup-btn-saved" onclick="selectPickupMethod('saved')" type="button">
+<div class="text-xl mb-1">📌</div>
+<div class="text-xs">Saved</div>
+</button>
+<button class="pickup-btn text-center" id="pickup-btn-map" onclick="selectPickupMethod('map')" type="button">
+<div class="text-xl mb-1">🗺️</div>
+<div class="text-xs">Map</div>
+</button>
+</div>
+<input id="pickup-lat" type="hidden"/>
+<input id="pickup-lng" type="hidden"/>
+<p class="text-sm text-gray-600 mt-1" id="pickup-location-text"></p>
+<div class="hide mt-3" id="inline-pickup-map-container">
+<div id="inline-pickup-map" style="height: 300px; width: 100%; border-radius: 12px; margin-bottom: 12px;"></div>
+<button class="w-full py-2 bg-blue-500 text-white rounded-xl" onclick="confirmInlinePickupLocation()" type="button">
+              ✅ Confirm Map Selection
+            </button>
+</div>
+</div>
+
+<div class="hide" id="deliver-self-container">
+  <div class="deliver-self-option flex items-start gap-3">
+    <input type="checkbox" id="deliver-self-checkbox" onchange="toggleDeliverSelf()" class="mt-1 h-5 w-5 accent-green-600"/>
+    <div>
+      <span class="font-semibold block">🚚 I will deliver this myself</span>
+      <p class="text-xs text-gray-600 mt-1">
+        You'll be responsible for delivering to the beneficiary.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="flex gap-3">
+<button class="flex-1 btn-secondary" onclick="hideCreateDonation()">Cancel</button>
+<button class="flex-1 btn-primary" onclick="submitDonation()">Post</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="hide fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" id="delivery-modal">
+<div class="bg-white rounded-2xl p-6 w-full max-w-md">
+<h2 class="text-xl font-bold mb-4" style="color: #1E3A5F;">Complete Delivery</h2>
+<div class="space-y-4">
+<div>
+<label class="block text-sm font-semibold mb-2">People Served *</label>
+<input class="w-full p-3 border-2 border-gray-200 rounded-xl outline-none" id="people-served" min="1" placeholder="Enter count" type="number"/>
+</div>
+<div class="flex gap-3">
+<button class="flex-1 btn-secondary" onclick="closeDeliveryModal()">Cancel</button>
+<button class="flex-1 btn-primary" onclick="submitDelivery()">Confirm ✓</button>
+</div>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+ const SUPABASE_URL = 'https://omuyruiycynnbbnxnwrh.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tdXlydWl5Y3lubmJibnhud3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyNTcyODQsImV4cCI6MjA3NTgzMzI4NH0.BgcqOomSxZCUwPhW8BkOjbMdXg67xGyG1PYUo21_TYg';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentUser = null;
+    let locationMap = null;
+    let locationMarker = null;
+    let selectedLocation = null;
+    let currentChatUser = null;
+    let chatSubscription = null;
+    let locationModalType = 'registration';
+    let currentAcceptingDonationId = null;
+    let chosenBeneficiaryId = null;
+    let trackingMaps = {};
+    let inlinePickupMap = null;
+    let inlinePickupMarker = null;
+    let selectedPickupLocation = null;
+    let unreadMessages = {};
+    let messageSubscriptions = [];
+    let notificationSubscription = null;
+    let deliverSelfMode = false;
+    let currentTab = 'home';
+    let nearbyRefreshInterval = null;
+    let donationsSubscription = null;
+let beneficiaryFoodPreferences = { veg: false, nonveg: false };
+let currentLiveLocation = null;
+let locationWatchId = null;
+let isLocationTracking = false;
+let lastBeneficiaryRefreshLocation = null;
+let windowBeforeUnloadAttached = false;
+let beneficiaryLoadInProgress = false;
+let lastExpiryUpdateTime = 0;
+const EXPIRY_UPDATE_THROTTLE = 1000; // 1 second
+
+// Initialize live location tracking
+// Initialize live location tracking with improved error handling
+// ============================================
+// SECTION 1: ENHANCED GPS LOCATION TRACKING
+// Replace lines ~1150-1280
+// ============================================
+
+// ============================================
+// ENHANCED GPS LOCATION TRACKING WITH BETTER ERROR HANDLING
+// ============================================
+
+
+
+function startLiveLocationTracking() {
+  if (!navigator.geolocation) {
+    console.warn('Geolocation not supported');
+    showNotification('Location Services Unavailable', 'Your browser does not support GPS tracking.', 'warning');
+    useFallbackLocation();
+    return;
+  }
+
+  // ✅ CRITICAL: Prevent multiple trackers
+  if (isLocationTracking) {
+    console.log('📍 Location tracking already active');
+    return;
+  }
+
+  // ✅ Clean up any existing tracker first
+  if (locationWatchId !== null) {
+    navigator.geolocation.clearWatch(locationWatchId);
+    locationWatchId = null;
+  }
+
+  isLocationTracking = true;
+  let retryCount = 0;
+  const maxRetries = 3;
+  let lastValidLocation = null;
+
+  console.log('📡 Starting real-time location tracking...');
+
+  locationWatchId = navigator.geolocation.watchPosition(
+    (position) => {
+      retryCount = 0;
+      const newLat = position.coords.latitude;
+      const newLng = position.coords.longitude;
+      
+      if (!isValidCoordinate(newLat, newLng)) {
+        console.error('Invalid coordinates received:', newLat, newLng);
+        return;
+      }
+      
+      const distanceMoved = currentLiveLocation 
+        ? calculateDistance(currentLiveLocation.lat, currentLiveLocation.lng, newLat, newLng)
+        : Infinity;
+
+      // ✅ IMPROVED: Only update if moved more than 50m OR first location
+      if (distanceMoved > 0.05 || !currentLiveLocation) {
+        currentLiveLocation = {
+          lat: newLat,
+          lng: newLng,
+          accuracy: position.coords.accuracy,
+          timestamp: position.timestamp,
+          isFallback: false
+        };
+        
+        lastValidLocation = { ...currentLiveLocation };
+
+        console.log(`📍 Location updated: ${newLat.toFixed(6)}, ${newLng.toFixed(6)} (±${Math.round(position.coords.accuracy)}m)`);
+
+        // ✅ IMPROVED: Throttle nearby content refresh
+        if (currentTab === 'nearby' && !window.locationUpdateThrottle) {
+          window.locationUpdateThrottle = true;
+          setTimeout(() => {
+            window.locationUpdateThrottle = false;
+            if (currentTab === 'nearby') {
+              loadNearbyContent();
+            }
+          }, 5000); // Refresh max once per 5 seconds
+        }
+      }
+    },
+    (error) => {
+      console.error('Location tracking error:', error);
+      
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          showNotification('Location Access Denied', 'Enable GPS in browser settings for real-time tracking.', 'warning');
+          isLocationTracking = false;
+          stopLiveLocationTracking();
+          useFallbackLocation();
+          break;
+          
+        case error.POSITION_UNAVAILABLE:
+          if (retryCount < maxRetries) {
+            retryCount++;
+            console.warn(`GPS unavailable (attempt ${retryCount}/${maxRetries}), retrying...`);
+            if (lastValidLocation) {
+              currentLiveLocation = { ...lastValidLocation, isFallback: true };
+            }
+          } else {
+            showNotification('GPS Unavailable', 'Using saved location. Check device settings.', 'warning');
+            useFallbackLocation();
+          }
+          break;
+          
+        case error.TIMEOUT:
+          retryCount++;
+          console.warn(`Location timeout (attempt ${retryCount}/${maxRetries})`);
+          
+          if (retryCount >= maxRetries) {
+            showNotification('GPS Timeout', 'Using saved location due to GPS timeout.', 'warning');
+            isLocationTracking = false;
+            stopLiveLocationTracking();
+            useFallbackLocation();
+          } else if (lastValidLocation) {
+            currentLiveLocation = { ...lastValidLocation, isFallback: true };
+          }
+          break;
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 5000
+    }
+  );
+
+  console.log('✅ Location tracking started with watch ID:', locationWatchId);
+}
+function stopLiveLocationTracking() {
+  if (locationWatchId !== null) {
+    navigator.geolocation.clearWatch(locationWatchId);
+    locationWatchId = null;
+    isLocationTracking = false;
+    console.log('✋ Stopped location tracking');
+  }
+  
+  // ✅ Also clear nearby refresh interval
+  if (nearbyRefreshInterval) {
+    clearInterval(nearbyRefreshInterval);
+    nearbyRefreshInterval = null;
+    console.log('✋ Stopped nearby refresh interval');
+  }
+  
+  // ✅ Reset location-related flags
+  window.locationUpdateThrottle = false;
+  lastBeneficiaryRefreshLocation = null;
+}
+
+function useFallbackLocation() {
+  if (currentUser && currentUser.location_lat && currentUser.location_lng) {
+    currentLiveLocation = {
+      lat: currentUser.location_lat,
+      lng: currentUser.location_lng,
+      accuracy: null,
+      timestamp: Date.now(),
+      isFallback: true
+    };
+    console.log('📍 Using fallback location:', currentLiveLocation);
+    
+    if (currentTab === 'nearby') {
+      setTimeout(() => loadNearbyContent(), 500);
+    }
+    
+    if (!window.fallbackNotificationShown) {
+      window.fallbackNotificationShown = true;
+      showNotification(
+        '📍 Using Saved Location', 
+        'GPS unavailable. Using your registered location.',
+        'warning'
+      );
+    }
+  } else {
+    console.error('❌ No fallback location available');
+    showNotification(
+      '⚠️ Location Required',
+      'Unable to determine your location. Please enable GPS or update your profile.',
+      'error'
+    );
+  }
+}
+
+function isValidCoordinate(lat, lng) {
+  return typeof lat === 'number' && 
+         typeof lng === 'number' && 
+         lat >= -90 && lat <= 90 && 
+         lng >= -180 && lng <= 180 &&
+         !isNaN(lat) && !isNaN(lng);
+}
+
+function getCurrentLocation() {
+  if (currentLiveLocation && !currentLiveLocation.isFallback) {
+    return currentLiveLocation;
+  }
+  
+  if (currentUser && currentUser.location_lat && currentUser.location_lng) {
+    return {
+      lat: currentUser.location_lat,
+      lng: currentUser.location_lng,
+      accuracy: null,
+      timestamp: Date.now(),
+      isFallback: true
+    };
+  }
+  
+  return null;
+}
+
+    // Prevent double-click submissions
+    const buttonStates = new Map();
+
+    function debounceButton(buttonId, callback, delay = 1000) {
+      if (buttonStates.get(buttonId)) {
+        return; // Button is already processing
+      }
+      
+      buttonStates.set(buttonId, true);
+      
+      // Disable the button visually
+      const button = typeof buttonId === 'string' ? document.getElementById(buttonId) : buttonId;
+      if (button) {
+        button.disabled = true;
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+      }
+      
+      // Execute callback
+      callback();
+      
+      // Re-enable after delay
+      setTimeout(() => {
+        buttonStates.delete(buttonId);
+        if (button) {
+          button.disabled = false;
+          button.style.opacity = '';
+          button.style.cursor = '';
+        }
+      }, delay);
+    }
+
+    function escapeHtml(unsafe) {
+      if (unsafe === null || unsafe === undefined) return '';
+      return String(unsafe)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function getFoodPreferenceDisplay(beneficiary) {
+      if (!beneficiary) return '';
+      
+      const prefs = [];
+      if (beneficiary.accepts_veg) prefs.push('🥬 Veg');
+      if (beneficiary.accepts_nonveg) prefs.push('� Non-Veg');
+      
+      if (prefs.length === 0) return '<span class="text-xs text-gray-500">No preferences set</span>';
+      return prefs.map(p => `<span class="badge" style="background: #E8F5E9; color: #2E7D32; margin-right: 4px;">${p}</span>`).join('');
+    }
+
+    function generateUniqueID() {
+      const timestamp = Date.now().toString(36);
+      const randomStr = Math.random().toString(36).substring(2, 9);
+      return `BEN-${timestamp}-${randomStr}`.toUpperCase();
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    function formatDistance(km) {
+      if (!isFinite(km)) return 'N/A';
+      if (km < 0.001) return `${Math.round(km * 1000000)}mm`;
+      if (km < 1) return `${Math.round(km * 1000)}m`;
+      return `${km.toFixed(2)}km`;
+    }
+
+function openGoogleMapsDirections(fromLat, fromLng, toLat, toLng, label = 'destination') {
+      if (!fromLat || !fromLng || !toLat || !toLng) {
+        alert('⚠️ Location data unavailable. Cannot open directions.');
+        return;
+      }
+      
+      if (!isValidCoordinate(fromLat, fromLng) || !isValidCoordinate(toLat, toLng)) {
+        alert('⚠️ Invalid location coordinates. Cannot open directions.');
+        return;
+      }
+      
+      // Google Maps URL with directions
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&travelmode=driving`;
+      
+      // Open in new tab
+      window.open(mapsUrl, '_blank');
+      
+      console.log(`🗺️ Opening directions to ${label}: ${toLat.toFixed(6)}, ${toLng.toFixed(6)}`);
+    }
+
+    function formatPhoneNumber(phone, role) {
+      if (!phone) return role === 'beneficiary' ? null : '';
+      let cleaned = phone.replace(/\D/g, '');
+      
+      if (cleaned.length < 10 || cleaned.length > 15) {
+        throw new Error('Invalid phone number length (should be 10-15 digits)');
+      }
+      
+      if (cleaned.length === 10) {
+        cleaned = '91' + cleaned;
+      }
+      
+      return cleaned.startsWith('+') ? cleaned : '+' + cleaned;
+    }
+
+    function isDonationExpired(expiryTime) {
+      if (!expiryTime) return false;
+      return new Date(expiryTime) <= new Date();
+    }
+
+
+   
+
+  
+// ============================================
+// EXPIRY TIME VALIDATION - SINGLE SOURCE OF TRUTH
+// Replace lines ~1050-1180
+// ============================================
+
+function setMinimumExpiryTime() {
+  const expiryInput = document.getElementById('food-expiry');
+  if (!expiryInput) {
+    console.error('❌ Expiry input not found');
+    return;
+  }
+  
+  // ✅ CRITICAL: Clear any existing interval first
+  const oldInterval = expiryInput.dataset.updateInterval;
+  if (oldInterval) {
+    clearInterval(parseInt(oldInterval));
+    console.log('🧹 Cleared old expiry validation interval');
+  }
+  
+  // ✅ CRITICAL: Remove ALL existing event listeners by cloning
+  const newExpiryInput = expiryInput.cloneNode(true);
+  expiryInput.parentNode.replaceChild(newExpiryInput, expiryInput);
+  
+  // Get reference to the new element
+  const freshExpiryInput = document.getElementById('food-expiry');
+  
+  // Update minimum time function
+  function updateMinimumTime() {
+    const now = new Date();
+    freshExpiryInput.min = now.toISOString().slice(0, 16);
+    
+    // Auto-correct if selected time is in the past
+    const currentValue = freshExpiryInput.value;
+    if (currentValue) {
+      const selectedTime = new Date(currentValue);
+      if (selectedTime <= now) {
+        const newDefault = new Date(now.getTime() + 60 * 60 * 1000);
+        freshExpiryInput.value = newDefault.toISOString().slice(0, 16);
+        console.log('⏰ Auto-corrected expired time to 1 hour from now');
+      }
+    }
+  }
+  
+  // Initial setup
+  updateMinimumTime();
+  
+  // Set default to 1 hour from now
+  const now = new Date();
+  const defaultTime = new Date(now.getTime() + 60 * 60 * 1000);
+  freshExpiryInput.value = defaultTime.toISOString().slice(0, 16);
+  
+  // ✅ Store interval ID for cleanup
+  const updateInterval = setInterval(() => {
+    if (!document.getElementById('food-expiry')) {
+      clearInterval(updateInterval);
+      console.log('🛑 Expiry validation stopped - input removed from DOM');
+      return;
+    }
+    updateMinimumTime();
+  }, 30000); // Update every 30 seconds
+  
+  freshExpiryInput.dataset.updateInterval = updateInterval;
+  
+  // ============================================
+  // EVENT LISTENERS - All defined here in one place
+  // ============================================
+  
+  // Real-time validation on input
+  freshExpiryInput.addEventListener('input', function(e) {
+    const selectedTime = new Date(this.value);
+    const currentTime = new Date();
+    
+    if (this.value && selectedTime <= currentTime) {
+      this.setCustomValidity('⏰ Expiry time must be in the future');
+      this.classList.add('invalid-time');
+      this.classList.remove('valid-time');
+    } else {
+      this.setCustomValidity('');
+      this.classList.remove('invalid-time');
+      this.classList.add('valid-time');
+    }
+  });
+  
+  // Validation on change
+  freshExpiryInput.addEventListener('change', function(e) {
+    const selectedTime = new Date(this.value);
+    const currentTime = new Date();
+    
+    if (selectedTime <= currentTime) {
+      alert('❌ Expiry time cannot be in the past!\n\nPlease select a future time.');
+      const newDefault = new Date(currentTime.getTime() + 60 * 60 * 1000);
+      this.value = newDefault.toISOString().slice(0, 16);
+      this.setCustomValidity('⏰ Expiry time must be in the future');
+      return;
+    }
+    
+    // Check if expiry is more than 7 days in the future
+    const maxTime = new Date(currentTime.getTime() + (7 * 24 * 60 * 60 * 1000));
+    if (selectedTime > maxTime) {
+      alert('⚠️ Expiry time cannot be more than 7 days in the future.');
+      this.value = maxTime.toISOString().slice(0, 16);
+      return;
+    }
+    
+    this.setCustomValidity('');
+  });
+  
+  // Validation on blur (when user leaves field)
+  freshExpiryInput.addEventListener('blur', function(e) {
+    const selectedTime = new Date(this.value);
+    const currentTime = new Date();
+    
+    if (this.value && selectedTime <= currentTime) {
+      const newDefault = new Date(currentTime.getTime() + 60 * 60 * 1000);
+      this.value = newDefault.toISOString().slice(0, 16);
+      alert('⚠️ Expiry time corrected to 1 hour from now.');
+    }
+  });
+  
+  console.log('✅ Expiry time validation initialized - Default: 1 hour from now');
+}
+    function showNotification(title, message, type = 'info') {
+      const container = document.getElementById('notification-container');
+      const notificationId = 'notif-' + Date.now();
+      
+      const notification = document.createElement('div');
+      notification.id = notificationId;
+      notification.className = 'notification-toast';
+      notification.innerHTML = `
+        <div class="notification-header">
+          <div class="notification-title">${escapeHtml(title)}</div>
+          <div class="notification-close" onclick="closeNotification('${notificationId}')">×</div>
+        </div>
+        <div class="notification-body">${escapeHtml(message)}</div>
+        <div class="notification-time">${new Date().toLocaleTimeString()}</div>
+      `;
+      
+      container.appendChild(notification);
+      
+      setTimeout(() => {
+        closeNotification(notificationId);
+      }, 5000);
+    }
+
+    function closeNotification(notificationId) {
+      const notification = document.getElementById(notificationId);
+      if (notification) {
+        notification.classList.add('hide');
+        setTimeout(() => {
+          notification.remove();
+        }, 300);
+      }
+    }
+// ============================================
+// 🔔 WHATSAPP-STYLE PUSH NOTIFICATION SYSTEM
+// ============================================
+
+let pushSubscription = null;
+let serviceWorkerRegistration = null;
+
+// Request notification permission on app load
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    console.log('❌ This browser does not support notifications');
+    return false;
+  }
+
+  if (Notification.permission === 'granted') {
+    console.log('✅ Notification permission already granted');
+    return true;
+  }
+
+  if (Notification.permission !== 'denied') {
+    console.log('📢 Requesting notification permission...');
+    const permission = await Notification.requestPermission();
+    
+    if (permission === 'granted') {
+      console.log('✅ Notification permission granted');
+      showInAppNotification('🔔 Notifications Enabled', 'You\'ll receive real-time updates!', 'success');
+      return true;
+    } else {
+      console.log('❌ Notification permission denied');
+      showInAppNotification('🔕 Notifications Disabled', 'Enable notifications in browser settings for real-time updates', 'warning');
+      return false;
+    }
+  }
+
+  console.log('❌ Notification permission denied');
+  return false;
+}
+
+// Register service worker
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) {
+    console.log('❌ Service workers not supported');
+    return null;
+  }
+
+  try {
+    console.log('🔄 Registering service worker...');
+    const registration = await navigator.serviceWorker.register('/sw.js', {
+      scope: '/'
+    });
+    
+    console.log('✅ Service Worker registered successfully');
+    serviceWorkerRegistration = registration;
+    
+    // Wait for service worker to be ready
+    await navigator.serviceWorker.ready;
+    console.log('✅ Service Worker is ready');
+    
+    return registration;
+  } catch (error) {
+    console.error('❌ Service Worker registration failed:', error);
+    return null;
+  }
+}
+
+// Subscribe to push notifications
+async function subscribeToPushNotifications() {
+  if (!currentUser) {
+    console.log('⚠️ No user logged in, skipping push subscription');
+    return;
+  }
+
+  const hasPermission = await requestNotificationPermission();
+  if (!hasPermission) {
+    console.log('⚠️ Push notification permission denied');
+    return;
+  }
+
+  const registration = serviceWorkerRegistration || await registerServiceWorker();
+  if (!registration) {
+    console.log('⚠️ Service worker registration failed');
+    return;
+  }
+
+  try {
+    console.log('🔄 Subscribing to push notifications...');
+    
+    // Check if already subscribed
+    let subscription = await registration.pushManager.getSubscription();
+    
+    if (!subscription) {
+      // Subscribe to push notifications
+      // NOTE: You need to generate VAPID keys and replace this
+      const vapidPublicKey = 'BHT8XvEs25uNYe-nZOZLwvglORfG1rzungB68JYr45-jWFWyvGKG6jti4aMy0nxzSrAHW68CvRD8_jGgi0uXH6k';
+      
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+      });
+      
+      console.log('✅ Push subscription created:', subscription.endpoint);
+    } else {
+      console.log('✅ Already subscribed to push notifications');
+    }
+
+    pushSubscription = subscription;
+
+    // Save subscription to Supabase
+    await savePushSubscription(subscription);
+    
+    console.log('✅ Push notifications fully configured');
+    
+  } catch (error) {
+    console.error('❌ Push subscription failed:', error);
+    console.log('💡 Falling back to in-app notifications only');
+  }
+}
+
+// Save push subscription to database
+async function savePushSubscription(subscription) {
+  if (!currentUser) return;
+
+  try {
+    const subscriptionData = JSON.stringify(subscription);
+    
+    // Check if subscription already exists
+    const { data: existing } = await supabase
+      .from('push_subscriptions')
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .single();
+
+    if (existing) {
+      // Update existing subscription
+      await supabase
+        .from('push_subscriptions')
+        .update({
+          subscription: subscriptionData,
+          endpoint: subscription.endpoint,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', currentUser.id);
+      
+      console.log('✅ Push subscription updated in database');
+    } else {
+      // Create new subscription
+      await supabase
+        .from('push_subscriptions')
+        .insert({
+          user_id: currentUser.id,
+          subscription: subscriptionData,
+          endpoint: subscription.endpoint,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      
+      console.log('✅ Push subscription saved to database');
+    }
+  } catch (error) {
+    console.error('❌ Failed to save push subscription:', error);
+  }
+}
+
+// Helper function to convert VAPID key
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+// Send test notification (for testing)
+async function sendTestNotification() {
+  if (!serviceWorkerRegistration) {
+    console.log('⚠️ Service worker not registered');
+    return;
+  }
+
+  if (Notification.permission !== 'granted') {
+    console.log('⚠️ Notification permission not granted');
+    return;
+  }
+
+ try {
+    await serviceWorkerRegistration.showNotification('🎉 Seva Test Notification', {
+      body: 'Push notifications are working! You\'ll receive updates for new donations, messages, and deliveries.',
+      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%23FF6B3D' width='192' height='192' rx='48'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='white'%3E❤️%3C/text%3E%3C/svg%3E",
+      badge: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Ccircle fill='%23FF6B3D' cx='36' cy='36' r='36'/%3E%3Ctext x='36' y='50' font-size='40' text-anchor='middle' fill='white'%3E❤️%3C/text%3E%3C/svg%3E",
+      tag: 'test-notification',
+      requireInteraction: false,
+      vibrate: [200, 100, 200],
+      data: { url: '/' },
+      actions: [
+        { action: 'open', title: '👁️ View' },
+        { action: 'close', title: '✖️ Close' }
+      ]
+    });
+    
+    console.log('✅ Test notification sent');
+  } catch (error) {
+    console.error('❌ Failed to send test notification:', error);
+  }
+}
+
+// Show in-app notification (fallback)
+function showInAppNotification(title, message, type = 'info') {
+  const container = document.getElementById('notification-container');
+  if (!container) return;
+  
+  const notificationId = 'notif-' + Date.now();
+  
+  const notification = document.createElement('div');
+  notification.id = notificationId;
+  notification.className = 'notification-toast';
+  
+  let iconEmoji = 'ℹ️';
+  let borderColor = '#2196F3';
+  
+  if (type === 'success') {
+    iconEmoji = '✅';
+    borderColor = '#4CAF50';
+  } else if (type === 'warning') {
+    iconEmoji = '⚠️';
+    borderColor = '#FF9800';
+  } else if (type === 'error') {
+    iconEmoji = '❌';
+    borderColor = '#F44336';
+  } else if (type === 'donation') {
+    iconEmoji = '🍽️';
+    borderColor = '#FF6B3D';
+  }
+  
+  notification.style.borderLeft = `4px solid ${borderColor}`;
+  
+  notification.innerHTML = `
+    <div class="notification-header">
+      <div class="notification-title">${iconEmoji} ${escapeHtml(title)}</div>
+      <div class="notification-close" onclick="closeInAppNotification('${notificationId}')">×</div>
+    </div>
+    <div class="notification-body">${escapeHtml(message)}</div>
+    <div class="notification-time">${new Date().toLocaleTimeString()}</div>
+  `;
+  
+  container.appendChild(notification);
+  
+  // Vibrate if supported
+  if ('vibrate' in navigator) {
+    navigator.vibrate([200, 100, 200]);
+  }
+  
+  // Auto-close after 5 seconds
+  setTimeout(() => {
+    closeInAppNotification(notificationId);
+  }, 5000);
+}
+
+function closeInAppNotification(notificationId) {
+  const notification = document.getElementById(notificationId);
+  if (notification) {
+    notification.classList.add('hide');
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }
+}
+
+// Subscribe to Supabase realtime notifications
+async function subscribeToNotifications() {
+  if (!currentUser) return;
+
+  // First, setup push notifications
+  await subscribeToPushNotifications();
+
+  // Then setup Supabase realtime subscriptions
+  if (notificationSubscription) {
+    try { 
+      await notificationSubscription.unsubscribe(); 
+    } catch(e) { 
+      console.error('Unsubscribe error:', e); 
+    }
+  }
+
+  notificationSubscription = supabase
+    .channel('donation_notifications')
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'donations' },
+      async (payload) => {
+        const donation = payload.new;
+        
+        if (isDonationExpired(donation.expires_at)) return;
+        
+        // Volunteer notifications for new donations
+        if (currentUser.role === 'volunteer' && donation.status === 'posted') {
+          const donorDistance = calculateDistance(
+            currentUser.location_lat,
+            currentUser.location_lng,
+            donation.pickup_lat,
+            donation.pickup_lng
+          );
+          
+          if (donorDistance <= 30) {
+            const { data: donor } = await supabase
+              .from('users')
+              .select('full_name')
+              .eq('id', donation.donor_id)
+              .single();
+            
+            // Show in-app notification
+            showInAppNotification(
+              '🍽️ New Donation Available!',
+              `${donor?.full_name || 'A donor'} posted ${donation.food_type} (${formatDistance(donorDistance)} away)`,
+              'donation'
+            );
+            
+            // Send push notification
+            await sendPushNotificationToUser(currentUser.id, {
+              title: '🍽️ New Donation Available!',
+              body: `${donor?.full_name || 'A donor'} posted ${donation.food_type} nearby`,
+              tag: `donation-${donation.id}`,
+              url: '/?tab=nearby',
+              donationId: donation.id
+            });
+            
+            if (currentTab === 'nearby') {
+              await loadNearbyContent();
+            }
+          }
+        }
+      }
+    )
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'donations' },
+      async (payload) => {
+        const donation = payload.new;
+        const oldDonation = payload.old;
+        
+        // Beneficiary notifications
+        if (currentUser.role === 'beneficiary' && 
+            donation.beneficiary_id === currentUser.beneficiaries?.[0]?.id &&
+            oldDonation.status === 'posted' && 
+            donation.status === 'accepted') {
+          
+          const { data: volunteer } = await supabase
+            .from('users')
+            .select('full_name')
+            .eq('id', donation.volunteer_id)
+            .single();
+          
+          showInAppNotification(
+            '📦 Donation Assigned!',
+            `${volunteer?.full_name || 'A volunteer'} is bringing you ${donation.food_type}`,
+            'success'
+          );
+          
+          await sendPushNotificationToUser(currentUser.id, {
+            title: '📦 Donation Assigned!',
+            body: `${volunteer?.full_name || 'A volunteer'} is bringing you ${donation.food_type}`,
+            tag: `donation-assigned-${donation.id}`,
+            url: '/?tab=tracking',
+            donationId: donation.id
+          });
+        }
+        
+        // Donor notifications for delivery
+        if (currentUser.role === 'donor' && 
+            donation.donor_id === currentUser.id &&
+            oldDonation.status !== 'delivered' && 
+            donation.status === 'delivered') {
+          
+          showInAppNotification(
+            '✅ Delivery Completed!',
+            `Your donation of ${donation.food_type} has been delivered! ${donation.actual_people_served || 0} people served!`,
+            'success'
+          );
+          
+          await sendPushNotificationToUser(currentUser.id, {
+            title: '✅ Delivery Completed!',
+            body: `Your ${donation.food_type} donation delivered! ${donation.actual_people_served || 0} people served!`,
+            tag: `delivery-complete-${donation.id}`,
+            url: '/?tab=history',
+            donationId: donation.id
+          });
+          
+          await updateUserStats();
+        }
+
+        // Volunteer notifications for acceptance
+        if (currentUser.role === 'volunteer' &&
+            donation.volunteer_id === currentUser.id &&
+            oldDonation.status === 'posted' &&
+            donation.status === 'accepted') {
+          
+          showInAppNotification(
+            '✅ Donation Accepted!',
+            `You accepted ${donation.food_type}. Contact the donor to arrange pickup.`,
+            'success'
+          );
+          
+          await sendPushNotificationToUser(currentUser.id, {
+            title: '✅ Donation Accepted!',
+            body: `You accepted ${donation.food_type}. Contact the donor.`,
+            tag: `accepted-${donation.id}`,
+            url: '/?tab=home',
+            donationId: donation.id
+          });
+        }
+      }
+    )
+    .subscribe();
+}
+
+// Send push notification to specific user (backend would handle this)
+async function sendPushNotificationToUser(userId, notificationData) {
+  // In production, this would call your backend API
+  // For now, we'll use Supabase Edge Functions or a backend service
+  
+  try {
+    // Example: Call Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke('send-push-notification', {
+      body: {
+        userId: userId,
+        notification: notificationData
+      }
+    });
+
+    if (error) throw error;
+    console.log('✅ Push notification triggered:', notificationData.title);
+  } catch (error) {
+    console.error('❌ Failed to send push notification:', error);
+    // Fallback to in-app notification only
+  }
+}
+
+// Initialize notifications on app load
+async function initializeNotifications() {
+  console.log('🔔 Initializing notification system...');
+  
+  // Register service worker
+  await registerServiceWorker();
+  
+  // Request permission
+  await requestNotificationPermission();
+  
+  console.log('✅ Notification system initialized');
+}
+
+// Add install prompt for PWA
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  console.log('💾 PWA install prompt available');
+  e.preventDefault();
+  deferredPrompt = e;
+  
+  // Show custom install button/banner
+  showInstallPromotion();
+});
+
+function showInstallPromotion() {
+  // You can show a custom "Install App" button here
+  console.log('📱 App can be installed');
+  
+  // Example: Show banner at top of app
+  if (currentUser) {
+    showInAppNotification(
+      '📱 Install Seva App',
+      'Install Seva for faster access and push notifications!',
+      'info'
+    );
+  }
+}
+
+async function installApp() {
+  if (!deferredPrompt) {
+    console.log('⚠️ Install prompt not available');
+    return;
+  }
+
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  
+  if (outcome === 'accepted') {
+    console.log('✅ User accepted PWA installation');
+    showInAppNotification('🎉 App Installed!', 'Open Seva from your home screen', 'success');
+  } else {
+    console.log('❌ User dismissed PWA installation');
+  }
+  
+  deferredPrompt = null;
+}
+
+window.addEventListener('appinstalled', () => {
+  console.log('✅ PWA was installed');
+  showInAppNotification('🎉 Welcome!', 'Seva has been installed successfully', 'success');
+});
+// ============================================
+// ✨ NETWORK STATUS MONITORING
+// ============================================
+
+// Monitor online/offline status
+window.addEventListener('online', () => {
+  console.log('📶 Network connection restored');
+  showNotification('Back Online', 'Network connection restored. Syncing data...', 'success');
+  
+  // Restart GPS tracking if we're on nearby tab
+  if (currentTab === 'nearby' && currentUser && !isLocationTracking) {
+    startLiveLocationTracking();
+  }
+  
+  // Reload current content to sync latest data
+  if (currentUser) {
+    if (currentTab === 'home') {
+      loadHomeContent();
+    } else if (currentTab === 'nearby') {
+      loadNearbyContent();
+    } else if (currentTab === 'tracking') {
+      loadTrackingContent();
+    }
+  }
+});
+
+window.addEventListener('offline', () => {
+  console.log('📵 Network connection lost');
+  showNotification('Offline Mode', 'Network connection lost. Some features may be limited.', 'warning');
+  
+  // Stop GPS tracking to save battery when offline
+  stopLiveLocationTracking();
+  
+  // Clear refresh intervals
+  if (nearbyRefreshInterval) {
+    clearInterval(nearbyRefreshInterval);
+    nearbyRefreshInterval = null;
+  }
+});
+
+// ============================================
+// CRITICAL: CLEANUP ON PAGE UNLOAD
+// ============================================
+
+function attachWindowUnloadHandler() {
+  if (windowBeforeUnloadAttached) return;
+  
+  window.addEventListener('beforeunload', () => {
+    // Stop location tracking
+    stopLiveLocationTracking();
+    
+    // Clear intervals
+    if (nearbyRefreshInterval) {
+      clearInterval(nearbyRefreshInterval);
+    }
+    
+    // Unsubscribe from all channels (fire and forget)
+    messageSubscriptions.forEach(sub => {
+      try { sub.unsubscribe(); } catch(e) {}
+    });
+    
+    if (notificationSubscription) {
+      try { notificationSubscription.unsubscribe(); } catch(e) {}
+    }
+    
+    if (donationsSubscription) {
+      try { donationsSubscription.unsubscribe(); } catch(e) {}
+    }
+    
+    if (chatSubscription) {
+      try { chatSubscription.unsubscribe(); } catch(e) {}
+    }
+    
+    // Clean up all maps
+    Object.values(trackingMaps).forEach(map => {
+      try { map.off(); map.remove(); } catch(e) {}
+    });
+    
+    if (locationMap) {
+      try { locationMap.off(); locationMap.remove(); } catch(e) {}
+    }
+    
+    if (inlinePickupMap) {
+      try { inlinePickupMap.off(); inlinePickupMap.remove(); } catch(e) {}
+    }
+  });
+  
+  windowBeforeUnloadAttached = true;
+}
+// ============================================
+// WINDOW ONLOAD - APP INITIALIZATION
+// ============================================
+
+window.onload = async () => {
+  await initializeNotifications();
+  setupPhoneValidation();
+  attachWindowUnloadHandler(); // Add cleanup handler
+  
+  // Check initial network status
+  if (!navigator.onLine) {
+    console.log('🔵 Starting in offline mode');
+    setTimeout(() => {
+      showNotification('Offline Mode', 'You are currently offline. Connect to the internet for full functionality.', 'warning');
+    }, 2000);
+  }
+  
+  // Load saved user session
+  const savedUserId = window.localStorage.getItem('seva_user_id');
+  if (savedUserId) {
+    try {
+      await loadUserData(savedUserId);
+      showMainApp();
+      subscribeToNotifications();
+    } catch (error) {
+      console.error('Failed to load saved user:', error);
+      window.localStorage.removeItem('seva_user_id');
+      showNotification('Session Expired', 'Please login again', 'error');
+    }
+  }
+};
+
+    function setupPhoneValidation() {
+      document.querySelectorAll('input[type="tel"]').forEach(input => {
+        input.addEventListener('input', (e) => {
+          let value = e.target.value.replace(/\D/g, '');
+          if (value.length > 10) value = value.slice(0, 10);
+          e.target.value = value;
+        });
+      });
+    }
+
+    function toggleLoginMethod() {
+      const method = document.getElementById('login-method').value;
+      const phoneField = document.getElementById('phone-login-field');
+      const uniqueIdField = document.getElementById('unique-id-login-field');
+      
+      if (method === 'phone') {
+        phoneField.classList.remove('hide');
+        uniqueIdField.classList.add('hide');
+      } else {
+        phoneField.classList.add('hide');
+        uniqueIdField.classList.remove('hide');
+      }
+    }
+
+    function toggleFoodPreference(type) {
+      if (type === 'veg') {
+        beneficiaryFoodPreferences.veg = !beneficiaryFoodPreferences.veg;
+        const vegOption = document.getElementById('pref-veg');
+        if (beneficiaryFoodPreferences.veg) {
+          vegOption.classList.add('selected');
+        } else {
+          vegOption.classList.remove('selected');
+        }
+      } else if (type === 'nonveg') {
+        beneficiaryFoodPreferences.nonveg = !beneficiaryFoodPreferences.nonveg;
+        const nonvegOption = document.getElementById('pref-nonveg');
+        if (beneficiaryFoodPreferences.nonveg) {
+          nonvegOption.classList.add('selected');
+        } else {
+          nonvegOption.classList.remove('selected');
+        }
+      }
+    }
+    
+    function toggleRegistrationFields() {
+      const role = document.getElementById('reg-role').value;
+      const benTypeField = document.getElementById('beneficiary-type-field');
+      const foodPrefField = document.getElementById('food-preference-field');
+      const phoneLabel = document.getElementById('phone-label');
+      const uniqueIdField = document.getElementById('unique-id-field');
+
+      if (role === 'beneficiary') {
+        benTypeField.classList.remove('hide');
+        foodPrefField.classList.remove('hide');
+        uniqueIdField.classList.remove('hide');
+        phoneLabel.textContent = 'Mobile Number (Optional)';
+        
+        beneficiaryFoodPreferences = { veg: false, nonveg: false };
+        document.getElementById('pref-veg').classList.remove('selected');
+        document.getElementById('pref-nonveg').classList.remove('selected');
+      } else {
+        benTypeField.classList.add('hide');
+        foodPrefField.classList.add('hide');
+        uniqueIdField.classList.add('hide');
+        phoneLabel.textContent = 'Mobile Number *';
+      }
+    }
+
+    async function register() {
+      const name = document.getElementById('reg-name').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const username = document.getElementById('reg-username').value.trim();
+      const role = document.getElementById('reg-role').value;
+      const latStr = document.getElementById('reg-lat').value;
+      const lngStr = document.getElementById('reg-lng').value;
+      const errorEl = document.getElementById('register-error');
+
+      errorEl.classList.add('hide');
+
+      if (!name || !username || !latStr || !lngStr) {
+        errorEl.textContent = 'Please fill all required fields';
+        errorEl.classList.remove('hide');
+        return;
+      }
+
+      if (role !== 'beneficiary' && !phone) {
+        errorEl.textContent = 'Phone number is required for donors and volunteers';
+        errorEl.classList.remove('hide');
+        return;
+      }
+
+      if (role === 'beneficiary' && !beneficiaryFoodPreferences.veg && !beneficiaryFoodPreferences.nonveg) {
+        errorEl.textContent = 'Please select at least one food preference (Veg or Non-Veg)';
+        errorEl.classList.remove('hide');
+        return;
+      }
+
+      const lat = parseFloat(latStr);
+      const lng = parseFloat(lngStr);
+      if (isNaN(lat) || isNaN(lng)) {
+        errorEl.textContent = 'Invalid location coordinates';
+        errorEl.classList.remove('hide');
+        return;
+      }
+
+      try {
+        const formattedPhone = phone ? formatPhoneNumber(phone, role) : null;
+        const address = await reverseGeocode(lat, lng);
+        const userId = crypto.randomUUID();
+        const uniqueId = role === 'beneficiary' ? generateUniqueID() : null;
+
+        const { error } = await supabase.from('users').insert({
+          id: userId,
+          full_name: name,
+          phone: formattedPhone,
+          username: username,
+          role: role,
+          location: `POINT(${lng} ${lat})`,
+          location_lat: lat,
+          location_lng: lng,
+          address: address,
+          verified: true,
+          is_active: true,
+          unique_id: uniqueId,
+          created_at: new Date().toISOString()
+        });
+
+        if (error) throw error;
+
+        if (role === 'beneficiary') {
+          await supabase.from('beneficiaries').insert({
+            user_id: userId,
+            beneficiary_type: document.getElementById('beneficiary-type')?.value || 'individual',
+            organization_name: name,
+            capacity: 50,
+            is_accepting_deliveries: true,
+            accepts_veg: beneficiaryFoodPreferences.veg,
+            accepts_nonveg: beneficiaryFoodPreferences.nonveg,
+            created_at: new Date().toISOString()
+          });
+
+          alert(`✅ Registration Successful!\n\n🔑 Your Unique ID: ${uniqueId}\n\n⚠️ IMPORTANT: Save this ID! You'll need it to login.\n\nSince phone is optional for beneficiaries, use this ID for future logins.`);
+        }
+
+        window.localStorage.setItem('seva_user_id', userId);
+        showNotification('Success', 'Registration successful! 🎉', 'success');
+        await loadUserData(userId);
+        showMainApp();
+        subscribeToNotifications();
+      } catch (error) {
+        errorEl.textContent = error.message || 'Registration failed. Please try again.';
+        errorEl.classList.remove('hide');
+        console.error(error);
+      }
+    }
+
+    async function login() {
+      const method = document.getElementById('login-method').value;
+      const phone = document.getElementById('login-phone').value.trim();
+      const uniqueId = document.getElementById('login-unique-id').value.trim();
+      const errorEl = document.getElementById('login-error');
+      
+      errorEl.classList.add('hide');
+
+      if (method === 'phone' && !phone) {
+        errorEl.textContent = 'Please enter mobile number';
+        errorEl.classList.remove('hide');
+        return;
+      }
+
+      if (method === 'unique_id' && !uniqueId) {
+        errorEl.textContent = 'Please enter unique ID';
+        errorEl.classList.remove('hide');
+        return;
+      }
+
+      const loginBtn = document.getElementById('login-btn');
+      const loginLoading = document.getElementById('login-loading');
+      
+      loginBtn.classList.add('hide');
+      loginLoading.classList.remove('hide');
+
+      try {
+        let data, error;
+
+        if (method === 'phone') {
+          const formattedPhone = formatPhoneNumber(phone, 'donor');
+          const result = await supabase
+            .from('users')
+            .select('*')
+            .eq('phone', formattedPhone)
+            .maybeSingle();
+          data = result.data;
+          error = result.error;
+        } else {
+          const result = await supabase
+            .from('users')
+            .select('*')
+            .eq('unique_id', uniqueId.toUpperCase())
+            .maybeSingle();
+          data = result.data;
+          error = result.error;
+        }
+
+        if (error) throw error;
+        
+        if (!data) {
+          errorEl.textContent = method === 'phone' ? 
+            'Mobile number not found. Please register first.' :
+            'Unique ID not found. Please check and try again.';
+          errorEl.classList.remove('hide');
+          return;
+        }
+
+        window.localStorage.setItem('seva_user_id', data.id);
+        await loadUserData(data.id);
+        showMainApp();
+        subscribeToNotifications();
+      } catch (error) {
+        errorEl.textContent = error.message || 'Login failed. Please try again.';
+        errorEl.classList.remove('hide');
+        console.error(error);
+      } finally {
+        loginBtn.classList.remove('hide');
+        loginLoading.classList.add('hide');
+      }
+    }
+
+    async function loadUserData(userId) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*, beneficiaries(*)')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      currentUser = data;
+      await updateUserStats();
+      await loadUnreadMessages();
+      subscribeToAllMessages();
+    }
+
+    async function updateUserStats() {
+      if (!currentUser) return;
+
+      try {
+        const { count: donationsCount } = await supabase
+          .from('donations')
+          .select('*', { count: 'exact', head: true })
+          .eq('donor_id', currentUser.id);
+
+        const { count: deliveriesCount } = await supabase
+          .from('donations')
+          .select('*', { count: 'exact', head: true })
+          .eq('volunteer_id', currentUser.id)
+          .eq('status', 'delivered');
+
+        const { data: donations } = await supabase
+          .from('donations')
+          .select('actual_people_served')
+          .or(`donor_id.eq.${currentUser.id},volunteer_id.eq.${currentUser.id}`)
+          .eq('status', 'delivered');
+
+        const totalBenefited = donations?.reduce((sum, d) => sum + (d.actual_people_served || 0), 0) || 0;
+        const totalRewards = (donationsCount || 0) * 10 + (deliveriesCount || 0) * 15 + (totalBenefited * 2);
+
+        document.getElementById('stat-donations').textContent = donationsCount || 0;
+        document.getElementById('stat-deliveries').textContent = deliveriesCount || 0;
+        document.getElementById('stat-benefited').textContent = totalBenefited;
+        document.getElementById('total-rewards').textContent = totalRewards;
+
+        currentUser.stats = {
+          donations: donationsCount || 0,
+          deliveries: deliveriesCount || 0,
+          benefited: totalBenefited,
+          rewards: totalRewards
+        };
+      } catch (error) {
+        console.error('Error updating stats:', error);
+      }
+    }
+
+// ============================================
+// ENHANCED LOGOUT WITH COMPLETE CLEANUP
+// ============================================
+
+async function logout() {
+  if (!confirm('Are you sure you want to logout?')) return;
+  
+  console.log('🔒 Starting logout process...');
+  
+  try {
+    // 1. Stop location tracking FIRST
+    stopLiveLocationTracking();
+    window.fallbackNotificationShown = false;
+    
+    // 2. Clear all intervals
+    if (nearbyRefreshInterval) {
+      clearInterval(nearbyRefreshInterval);
+      nearbyRefreshInterval = null;
+    }
+    
+    // 3. Clear expiry validation interval if exists
+    const expiryInput = document.getElementById('food-expiry');
+    if (expiryInput && expiryInput.dataset.updateInterval) {
+      clearInterval(parseInt(expiryInput.dataset.updateInterval));
+    }
+    
+    // 4. Unsubscribe from all channels
+    const unsubscribePromises = [];
+    
+    messageSubscriptions.forEach(sub => {
+      unsubscribePromises.push(
+        sub.unsubscribe().catch(e => console.error('Message unsub error:', e))
+      );
+    });
+    messageSubscriptions = [];
+    
+    if (notificationSubscription) {
+      unsubscribePromises.push(
+        notificationSubscription.unsubscribe().catch(e => console.error('Notification unsub error:', e))
+      );
+      notificationSubscription = null;
+    }
+    
+    if (donationsSubscription) {
+      unsubscribePromises.push(
+        donationsSubscription.unsubscribe().catch(e => console.error('Donations unsub error:', e))
+      );
+      donationsSubscription = null;
+    }
+    
+    if (chatSubscription) {
+      unsubscribePromises.push(
+        chatSubscription.unsubscribe().catch(e => console.error('Chat unsub error:', e))
+      );
+      chatSubscription = null;
+    }
+    
+    await Promise.race([
+      Promise.all(unsubscribePromises),
+      new Promise(resolve => setTimeout(resolve, 2000))
+    ]);
+    
+    // 5. Clean up ALL maps
+    const cleanupMap = (map) => {
+      if (map) {
+        try {
+          map.off();
+          map.remove();
+        } catch(e) {
+          console.error('Map cleanup error:', e);
+        }
+      }
+    };
+    
+    Object.values(trackingMaps).forEach(cleanupMap);
+    trackingMaps = {};
+    
+    cleanupMap(locationMap);
+    locationMap = null;
+    locationMarker = null;
+    
+    cleanupMap(inlinePickupMap);
+    inlinePickupMap = null;
+    inlinePickupMarker = null;
+    
+    // 6. Clear all data
+    currentUser = null;
+    currentLiveLocation = null;
+    selectedLocation = null;
+    selectedPickupLocation = null;
+    unreadMessages = {};
+    chosenBeneficiaryId = null;
+    currentAcceptingDonationId = null;
+    currentChatUser = null;
+    deliverSelfMode = false;
+    lastBeneficiaryRefreshLocation = null;
+    window.inlineMapInitializing = false;
+    buttonStates.clear();
+    
+    // 7. Clear localStorage
+    window.localStorage.removeItem('seva_user_id');
+    
+    console.log('✅ Logout complete');
+    location.reload();
+    
+  } catch (error) {
+    console.error('⚠️ Logout error:', error);
+    window.localStorage.removeItem('seva_user_id');
+    location.reload();
+  }
+}
+    function showMainApp() {
+      document.getElementById('welcome-screen').classList.add('hide');
+      document.getElementById('login-screen').classList.add('hide');
+      document.getElementById('register-screen').classList.add('hide');
+      document.getElementById('main-app').classList.remove('hide');
+
+      document.getElementById('user-name').textContent = currentUser.full_name;
+      document.getElementById('user-role').textContent = currentUser.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : 'User';
+      loadHomeContent();
+    }
+
+    function showLogin() {
+      document.getElementById('welcome-screen').classList.add('hide');
+      document.getElementById('login-screen').classList.remove('hide');
+    }
+
+    function showRegister() {
+      document.getElementById('welcome-screen').classList.add('hide');
+      document.getElementById('register-screen').classList.remove('hide');
+    }
+
+    function backToWelcome() {
+      document.getElementById('login-screen').classList.add('hide');
+      document.getElementById('register-screen').classList.add('hide');
+      document.getElementById('welcome-screen').classList.remove('hide');
+    }
+
+
+// ============================================
+// ENHANCED TAB SWITCHING WITH COMPLETE CLEANUP
+// ============================================
+
+async function showTab(tab) {
+  const previousTab = currentTab;
+  
+  if (previousTab === tab) {
+    console.log(`⭕️ Already on ${tab} tab`);
+    return;
+  }
+  
+  currentTab = tab;
+  console.log(`🔄 Switching from ${previousTab} to ${tab}`);
+  
+  // ✅ PHASE 1: Stop location tracking when leaving nearby
+  if (previousTab === 'nearby' && tab !== 'nearby') {
+    stopLiveLocationTracking();
+    
+    if (nearbyRefreshInterval) {
+      clearInterval(nearbyRefreshInterval);
+      nearbyRefreshInterval = null;
+      console.log('⏹️ Stopped nearby refresh interval');
+    }
+  }
+  
+  // ✅ PHASE 2: Clean up ALL maps
+  const cleanupMap = (map, mapName) => {
+    if (map) {
+      try {
+        console.log(`🧹 Cleaning up ${mapName}...`);
+        map.off();
+        map.remove();
+        console.log(`✅ ${mapName} cleaned up`);
+        return true;
+      } catch(e) {
+        console.error(`❌ Error cleaning up ${mapName}:`, e);
+        return false;
+      }
+    }
+    return true;
+  };
+  
+  if (Object.keys(trackingMaps).length > 0) {
+    console.log(`🧹 Cleaning up ${Object.keys(trackingMaps).length} tracking maps`);
+    Object.keys(trackingMaps).forEach(mapId => {
+      cleanupMap(trackingMaps[mapId], `tracking map ${mapId}`);
+      delete trackingMaps[mapId];
+    });
+  }
+  
+  if (locationMap) {
+    cleanupMap(locationMap, 'location picker map');
+    locationMap = null;
+    locationMarker = null;
+    selectedLocation = null;
+  }
+  
+  if (inlinePickupMap) {
+    cleanupMap(inlinePickupMap, 'inline pickup map');
+    inlinePickupMap = null;
+    inlinePickupMarker = null;
+    selectedPickupLocation = null;
+    
+    const mapContainer = document.getElementById('inline-pickup-map-container');
+    if (mapContainer) {
+      mapContainer.classList.add('hide');
+    }
+    const mapElement = document.getElementById('inline-pickup-map');
+    if (mapElement) {
+      mapElement.innerHTML = '';
+    }
+  }
+  
+  // ✅ PHASE 3: Wait for DOM cleanup
+  await new Promise(resolve => setTimeout(resolve, 250));
+  
+  if (Object.keys(trackingMaps).length > 0) {
+    console.warn('⚠️ Tracking maps still exist after cleanup, forcing removal');
+    trackingMaps = {};
+  }
+  
+  // ✅ PHASE 4: Update tab UI
+  console.log('🎨 Updating tab UI...');
+  document.querySelectorAll('[id^="tab-"]').forEach(t => {
+    t.classList.remove('tab-active');
+    t.classList.add('text-gray-600');
+  });
+
+  const tabBtn = document.getElementById('tab-' + tab);
+  if (tabBtn) {
+    tabBtn.classList.add('tab-active');
+    tabBtn.classList.remove('text-gray-600');
+  }
+
+  // ✅ PHASE 5: Load new content
+  console.log(`📄 Loading ${tab} content...`);
+  
+  try {
+    if (tab === 'home') {
+      await loadHomeContent();
+    } else if (tab === 'nearby') {
+      if (!isLocationTracking) {
+        console.log('📍 Starting GPS tracking for nearby tab');
+        startLiveLocationTracking();
+      }
+      await loadNearbyContent();
+    } else if (tab === 'tracking') {
+      await loadTrackingContent();
+    } else if (tab === 'history') {
+      await loadHistoryContent();
+    }
+    console.log(`✅ ${tab} content loaded successfully`);
+  } catch (error) {
+    console.error(`❌ Error loading ${tab} content:`, error);
+    const content = document.getElementById('content-area');
+    if (content) {
+      content.innerHTML = `
+        <div class="card text-center">
+          <div class="text-red-600 mb-2">⚠️ Error Loading Content</div>
+          <p class="text-sm text-gray-600">${error.message || 'Unknown error occurred'}</p>
+          <button onclick="showTab('${tab}')" class="btn-primary mt-4" style="width: auto;">
+            🔄 Retry
+          </button>
+        </div>
+      `;
+    }
+  }
+}
+    async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    const data = await res.json();
+    return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  } catch (err) {
+    console.error('Reverse geocode failed', err);
+    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  }
+}
+
+// ✅ FIXED: Update confirmLocation to properly display address
+// ✅ FIXED: Update confirmLocation to properly display address with styling
+function confirmLocation() {
+  if (!selectedLocation) {
+    alert('Please select a location first by clicking on the map or using "Use Current Location".');
+    return;
+  }
+
+  const { lat, lng, address } = selectedLocation;
+  
+  if (locationModalType === 'registration') {
+    document.getElementById('reg-lat').value = lat;
+    document.getElementById('reg-lng').value = lng;
+    document.getElementById('reg-address').value = address;
+    
+    // ✅ FIX: Properly update the location button text with address AND styling
+    const locationTextBtn = document.getElementById('location-text');
+    if (locationTextBtn) {
+      locationTextBtn.textContent = `📍 ${address}`;
+      locationTextBtn.style.color = '#4CAF50';
+      locationTextBtn.style.fontWeight = '600';
+    }
+    
+    console.log('✅ Location confirmed for registration:', address);
+  }
+  
+  closeLocationPicker();
+}
+// ============================================
+// REMAINING FUNCTIONS FOR SEVA PLATFORM
+// Add these after reverseGeocode() function in your HTML file
+// Replace the comment section that says "IMPORTANT: Due to character limits..."
+// ============================================
+
+// HOME CONTENT FUNCTIONS
+function loadHomeContent() {
+  const content = document.getElementById('content-area');
+
+  if (!currentUser) {
+    content.innerHTML = '<div class="card text-center">Please login to see content.</div>';
+    return;
+  }
+
+  if (currentUser.role === 'donor') {
+    content.innerHTML = `
+      <button onclick="showCreateDonation()" style="background: #FF6B3D;" class="text-white py-4 rounded-2xl font-semibold mb-6 shadow-lg w-full">
+        <span class="text-2xl">+</span> Post New Donation
+      </button>
+      <h3 class="text-lg font-bold mb-3">Your Active Donations</h3>
+      <div id="donor-list"></div>
+    `;
+    loadDonorDonations();
+  } else if (currentUser.role === 'volunteer') {
+    content.innerHTML = `
+      <button onclick="showCreateDonation()" style="background: #4CAF50;" class="text-white py-4 rounded-2xl font-semibold mb-6 shadow-lg w-full">
+        <span class="text-2xl">+</span> Create Donation
+      </button>
+      <div class="card" style="background: #FF6B3D; color: white;">
+        <h3 class="text-xl font-bold">🚚 Ready to Deliver?</h3>
+        <p class="text-sm opacity-90 mt-2">Check "Nearby" tab for available donations</p>
+      </div>
+      <h3 class="text-lg font-bold mb-3 mt-4">Your Active Deliveries</h3>
+      <div id="volunteer-list"></div>
+    `;
+    loadVolunteerDeliveries();
+  } else {
+    content.innerHTML = `
+      <div class="card" style="background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); color: white;">
+        <h3 class="text-xl font-bold">📦 Incoming Deliveries</h3>
+        <p class="text-sm opacity-90 mt-2">Track your food donations</p>
+      </div>
+      <div id="beneficiary-list" class="mt-4"></div>
+    `;
+    loadBeneficiaryDeliveries();
+  }
+}
+
+async function loadDonorDonations() {
+  const { data } = await supabase
+    .from('donations')
+    .select('*, volunteers:users!volunteer_id(full_name, phone), beneficiaries:beneficiaries(*, users!inner(full_name))')
+    .eq('donor_id', currentUser.id)
+    .in('status', ['posted', 'accepted', 'picked_up'])
+    .order('created_at', { ascending: false });
+
+  const container = document.getElementById('donor-list');
+  
+  const activeDonations = data?.filter(d => !isDonationExpired(d.expires_at)) || [];
+  
+  if (activeDonations.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No active donations</div>';
+    return;
+  }
+
+  container.innerHTML = activeDonations.map(d => {
+    const isSelfDelivery = d.donor_id === d.volunteer_id;
+    
+    return `
+    <div class="card">
+      <div class="flex justify-between items-start mb-2">
+        <div>
+          <h4 class="font-bold text-lg">${escapeHtml(d.food_type || '')}</h4>
+          <span class="badge badge-posted">${(d.status || '').replace('_', ' ').toUpperCase()}</span>
+          ${isSelfDelivery ? '<span class="badge" style="background: #4CAF50; color: white; margin-left: 8px;">Self Delivery</span>' : ''}
+        </div>
+        <span class="${d.is_veg ? 'badge badge-veg' : 'badge badge-nonveg'}">${d.is_veg ? '🥬' : '🍗'}</span>
+      </div>
+      <p class="text-sm text-gray-600 mb-1">📦 ${d.quantity} ${d.unit}</p>
+      <p class="text-sm text-gray-600 mb-2">⏰ Expires: ${d.expires_at ? new Date(d.expires_at).toLocaleString() : 'N/A'}</p>
+      ${d.beneficiaries ? `<p class="text-sm text-purple-600">🏠 To: ${escapeHtml(d.beneficiaries.users.full_name || '')}</p>` : ''}
+      ${d.volunteers && !isSelfDelivery ? `<p class="text-sm text-blue-600">🚚 Volunteer: ${escapeHtml(d.volunteers.full_name || '')}</p>` : ''}
+      ${!d.volunteers && !isSelfDelivery ? '<p class="text-sm text-orange-600">⏳ Waiting for volunteer...</p>' : ''}
+      
+      ${isSelfDelivery && d.status === 'accepted' ? `
+        <button onclick="updateStatus('${d.id}', 'picked_up')" class="w-full py-2 rounded-lg mt-2" style="background: #2196F3; color: white;">
+          📦 Mark as Picked Up
+        </button>
+      ` : ''}
+      
+      ${isSelfDelivery && d.status === 'picked_up' ? `
+        <button onclick="completeDelivery('${d.id}')" class="w-full py-2 rounded-lg mt-2" style="background: #4CAF50; color: white;">
+          ✓ Complete Delivery
+        </button>
+      ` : ''}
+    </div>
+  `;
+  }).join('');
+}
+
+async function loadVolunteerDeliveries() {
+  const { data } = await supabase
+    .from('donations')
+    .select('*, donors:users!donor_id(id, full_name, phone, location_lat, location_lng), beneficiaries:beneficiaries(*, users!inner(id, full_name, phone, location_lat, location_lng))')
+    .eq('volunteer_id', currentUser.id)
+    .in('status', ['accepted', 'picked_up'])
+    .order('created_at', { ascending: false });
+
+  const container = document.getElementById('volunteer-list');
+  
+  const activeDeliveries = data?.filter(d => !isDonationExpired(d.expires_at)) || [];
+  
+  if (activeDeliveries.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No active deliveries</div>';
+    return;
+  }
+
+  container.innerHTML = activeDeliveries.map(d => {
+    const distance = calculateDistance(
+      currentUser.location_lat, currentUser.location_lng,
+      d.donors?.location_lat, d.donors?.location_lng
+    );
+
+    const unreadDonor = d.donors?.id ? (unreadMessages[d.donors.id] || 0) : 0;
+    const beneficiaryUserId = d.beneficiaries?.users?.id || d.beneficiaries?.id || null;
+    const unreadBeneficiary = beneficiaryUserId ? (unreadMessages[beneficiaryUserId] || 0) : 0;
+    const beneficiaryName = d.beneficiaries?.users?.full_name || d.beneficiaries?.organization_name || '';
+    const isSelfDelivery = d.donor_id === d.volunteer_id;
+
+    return `
+    <div class="card">
+      <div class="flex justify-between items-start mb-2">
+        <div>
+          <h4 class="font-bold">${escapeHtml(d.food_type || '')}</h4>
+          <span class="distance-badge">📍 ${formatDistance(distance)}</span>
+          ${isSelfDelivery ? '<span class="badge" style="background: #4CAF50; color: white; margin-left: 8px;">Self Delivery</span>' : ''}
+        </div>
+        <span class="badge badge-accepted">${(d.status || '').replace('_', ' ').toUpperCase()}</span>
+      </div>
+      <p class="text-sm text-gray-600 mb-2">📦 ${d.quantity} ${d.unit}</p>
+      ${!isSelfDelivery ? `<p class="text-sm text-blue-600 mb-2">👤 ${escapeHtml(d.donors?.full_name || 'Donor')} • ${escapeHtml(d.donors?.phone || '')}</p>` : ''}
+      ${d.beneficiaries ? `<p class="text-sm text-purple-600 mb-2">🏠 To: ${escapeHtml(beneficiaryName)}</p>` : ''}
+
+      <div class="flex gap-2 mb-2">
+        ${!isSelfDelivery ? `
+          <button onclick="openChat('${d.donors?.id || ''}', '${escapeHtml(d.donors?.full_name || '')}')" data-user-id="${d.donors?.id || ''}" class="btn-chat flex-1">
+            💬 Chat Donor ${unreadDonor > 0 ? `<span class="unread-badge">${unreadDonor}</span>` : ''}
+          </button>
+        ` : ''}
+
+        ${d.beneficiaries && (d.status === 'accepted' || d.status === 'picked_up') ? `
+          <button onclick="openChat('${beneficiaryUserId}', '${escapeHtml(beneficiaryName)}')" data-user-id="${beneficiaryUserId}" class="btn-chat flex-1">
+            💬 Chat Beneficiary ${unreadBeneficiary > 0 ? `<span class="unread-badge">${unreadBeneficiary}</span>` : ''}
+          </button>
+        ` : ''}
+      </div>
+
+      ${d.status === 'accepted' ? `
+        <button onclick="updateStatus('${d.id}', 'picked_up')" class="w-full py-2 rounded-lg mb-2" style="background: #2196F3; color: white;">
+          📦 Mark as Picked Up
+        </button>
+      ` : ''}
+      <button onclick="completeDelivery('${d.id}')" class="w-full py-2 rounded-lg" style="background: #4CAF50; color: white;">
+        ✓ Complete Delivery
+      </button>
+    </div>
+    `;
+  }).join('');
+
+  updateChatNotifications();
+}
+
+async function loadBeneficiaryDeliveries() {
+  const beneficiaryId = currentUser.beneficiaries?.[0]?.id;
+  if (!beneficiaryId) {
+    document.getElementById('beneficiary-list').innerHTML = '<div class="card text-center text-gray-400">Profile not found</div>';
+    return;
+  }
+
+  const { data } = await supabase
+    .from('donations')
+    .select('*, volunteers:users!volunteer_id(id, full_name, phone), donors:users!donor_id(id, full_name)')
+    .eq('beneficiary_id', beneficiaryId)
+    .in('status', ['posted', 'accepted', 'picked_up'])
+    .order('created_at', { ascending: false});
+
+  const container = document.getElementById('beneficiary-list');
+  
+  const activeDeliveries = data?.filter(d => !isDonationExpired(d.expires_at)) || [];
+  
+  if (activeDeliveries.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No incoming deliveries</div>';
+    return;
+  }
+
+  container.innerHTML = activeDeliveries.map(d => {
+    const volunteerUnread = d.volunteers?.id ? (unreadMessages[d.volunteers.id] || 0) : 0;
+    return `
+    <div class="card">
+      <h4 class="font-bold text-lg mb-2">${escapeHtml(d.food_type || '')}</h4>
+      <span class="badge badge-posted">${(d.status || '').replace('_', ' ').toUpperCase()}</span>
+      <p class="text-sm text-gray-600 mt-2">📦 ${d.quantity} ${d.unit}</p>
+      <p class="text-sm text-blue-600">👤 From: ${escapeHtml(d.donors?.full_name || '')}</p>
+      ${d.volunteers ? `
+        <p class="text-sm text-green-600">🚚 ${escapeHtml(d.volunteers.full_name || '')} • ${escapeHtml(d.volunteers.phone || '')}</p>
+        <button onclick="openChat('${d.volunteers.id}', '${escapeHtml(d.volunteers.full_name || '')}')" data-user-id="${d.volunteers.id}" class="btn-chat w-full mt-3">
+          💬 Chat with Volunteer ${volunteerUnread > 0 ? `<span class="unread-badge">${volunteerUnread}</span>` : ''}
+        </button>
+      ` : '<p class="text-sm text-orange-600">⏳ Waiting for volunteer...</p>'}
+      <p class="text-sm text-gray-500 mt-2">Created: ${d.created_at ? new Date(d.created_at).toLocaleString() : 'N/A'}</p>
+    </div>
+  `;
+  }).join('');
+  updateChatNotifications();
+}
+
+// NEARBY CONTENT FUNCTIONS
+// ============================================
+// SECTION 2: ENHANCED NEARBY FUNCTIONS WITH REAL-TIME GPS
+// REPLACE all loadNearby* functions (around line 1400-1700)
+// ============================================
+
+// Enhanced loadNearbyContent with real-time location
+// ============================================
+// NEARBY CONTENT FUNCTIONS - COMPLETE VERIFIED VERSION
+// ============================================
+
+async function loadNearbyContent() {
+  const content = document.getElementById('content-area');
+
+  if (!currentUser) {
+    content.innerHTML = '<div class="card text-center">Please login to see nearby content.</div>';
+    return;
+  }
+
+  // **CRITICAL: Start GPS tracking when entering nearby tab**
+  if (!isLocationTracking) {
+    startLiveLocationTracking();
+  }
+
+  // Get current GPS location
+  const location = getCurrentLocation();
+  
+  if (!location) {
+    content.innerHTML = `
+      <div class="card text-center">
+        <div class="text-red-600 mb-3">📍 Unable to get location</div>
+        <p class="text-sm text-gray-600">Please enable GPS in your browser settings</p>
+        <button onclick="startLiveLocationTracking()" class="btn-primary mt-4" style="width: auto; padding: 12px 24px;">
+          🔄 Retry GPS
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  // Show location status indicator
+  const locationStatus = location.isFallback 
+    ? '<span class="realtime-indicator" style="background: #FFF3E0; color: #E65100;"><span class="realtime-dot" style="background: #FF9800;"></span>Saved Location</span>'
+    : `<span class="realtime-indicator"><span class="realtime-dot"></span>Live GPS ${location.accuracy ? `(±${Math.round(location.accuracy)}m)` : ''}</span>`;
+
+  if (currentUser.role === 'volunteer') {
+    content.innerHTML = `
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold">🍲 Available Donations Nearby</h3>
+        ${locationStatus}
+      </div>
+      <div class="text-xs text-gray-500 mb-3">
+        📍 Searching from: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}
+        ${location.isFallback ? ' (Enable GPS for real-time tracking)' : ''}
+      </div>
+      <div id="nearby-donations"></div>
+    `;
+    await loadNearbyDonations(location);
+    
+    // Auto-refresh every 15 seconds
+    if (nearbyRefreshInterval) clearInterval(nearbyRefreshInterval);
+    nearbyRefreshInterval = setInterval(async () => {
+      if (currentTab === 'nearby') {
+        const currentLoc = getCurrentLocation();
+        if (currentLoc) {
+          await loadNearbyDonations(currentLoc);
+        }
+      }
+    }, 15000);
+    
+  } else if (currentUser.role === 'donor') {
+    content.innerHTML = `
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold">🚚 Volunteers Nearby</h3>
+        ${locationStatus}
+      </div>
+      <div class="text-xs text-gray-500 mb-3">
+        📍 Searching from: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}
+      </div>
+      <div id="nearby-volunteers"></div>
+      <h3 class="text-lg font-bold mb-3 mt-6">🏠 Beneficiaries Nearby</h3>
+      <div id="nearby-beneficiaries"></div>
+    `;
+    await loadNearbyVolunteers(location);
+    await loadNearbyBeneficiaries(location);
+    
+    if (nearbyRefreshInterval) clearInterval(nearbyRefreshInterval);
+    nearbyRefreshInterval = setInterval(async () => {
+      if (currentTab === 'nearby') {
+        const currentLoc = getCurrentLocation();
+        if (currentLoc) {
+          await loadNearbyVolunteers(currentLoc);
+          await loadNearbyBeneficiaries(currentLoc);
+        }
+      }
+    }, 15000);
+    
+  } else {
+    content.innerHTML = `
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold">🍲 Donations Nearby</h3>
+        ${locationStatus}
+      </div>
+      <div class="text-xs text-gray-500 mb-3">
+        📍 Searching from: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}
+      </div>
+      <div id="nearby-donations-ben"></div>
+      <h3 class="text-lg font-bold mb-3 mt-6">🚚 Volunteers Nearby</h3>
+      <div id="nearby-volunteers-ben"></div>
+    `;
+    await loadNearbyDonationsForBeneficiary(location);
+    await loadNearbyVolunteersForBeneficiary(location);
+    
+    if (nearbyRefreshInterval) clearInterval(nearbyRefreshInterval);
+    nearbyRefreshInterval = setInterval(async () => {
+      if (currentTab === 'nearby') {
+        const currentLoc = getCurrentLocation();
+        if (currentLoc) {
+          await loadNearbyDonationsForBeneficiary(currentLoc);
+          await loadNearbyVolunteersForBeneficiary(currentLoc);
+        }
+      }
+    }, 15000);
+  }
+}
+
+// Enhanced loadNearbyDonations with location parameter
+async function loadNearbyDonations(location) {
+  if (!location) {
+    location = getCurrentLocation();
+    if (!location) return;
+  }
+
+  const { data } = await supabase
+    .from('donations')
+    .select('*, donors:users!donor_id(id, full_name, phone, location_lat, location_lng), beneficiaries:beneficiaries(*, users!inner(id, full_name, location_lat, location_lng))')
+    .eq('status', 'posted')
+    .order('created_at', { ascending: false });
+
+  const container = document.getElementById('nearby-donations');
+  if (!container) return;
+
+  const validDonations = data?.filter(d => !isDonationExpired(d.expires_at)) || [];
+
+  if (validDonations.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No donations available</div>';
+    document.getElementById('nearby-badge')?.classList.add('hide');
+    return;
+  }
+
+  const sortedData = validDonations.map(d => {
+    const distance = calculateDistance(
+      location.lat,
+      location.lng,
+      d.donors?.location_lat,
+      d.donors?.location_lng
+    );
+    return { ...d, distance };
+  }).filter(x => x.distance <= 30)
+    .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
+    .slice(0, 10);
+
+  const badge = document.getElementById('nearby-badge');
+  if (badge) {
+    badge.textContent = sortedData.length;
+    if (sortedData.length > 0) {
+      badge.classList.remove('hide');
+    } else {
+      badge.classList.add('hide');
+    }
+  }
+
+  if (sortedData.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No donations within 30km of your current location</div>';
+    return;
+  }
+
+  container.innerHTML = sortedData.map(d => {
+    const unread = unreadMessages[d.donors?.id] || 0;
+    const donorLat = d.pickup_lat || d.donors?.location_lat;
+    const donorLng = d.pickup_lng || d.donors?.location_lng;
+    const beneficiaryLat = d.beneficiaries?.users?.location_lat;
+    const beneficiaryLng = d.beneficiaries?.users?.location_lng;
+    
+    return `
+    <div class="card">
+      <div class="flex justify-between items-start mb-2">
+        <div>
+          <h4 class="font-bold text-lg">${escapeHtml(d.food_type || '')}</h4>
+          <span class="distance-badge">📍 ${formatDistance(d.distance)} away</span>
+        </div>
+        <span class="${d.is_veg ? 'badge badge-veg' : 'badge badge-nonveg'}">${d.is_veg ? '🥬 Veg' : '🍗 Non-Veg'}</span>
+      </div>
+      <p class="text-sm text-gray-600 mb-1">📦 ${d.quantity} ${d.unit}</p>
+      <p class="text-sm text-gray-600 mb-2">⏰ Expires: ${d.expires_at ? new Date(d.expires_at).toLocaleString() : 'N/A'}</p>
+      <p class="text-sm text-blue-600 mb-2">👤 ${escapeHtml(d.donors?.full_name || '')} • ${escapeHtml(d.donors?.phone || '')}</p>
+      ${d.beneficiaries ? `<p class="text-sm text-purple-600 mb-2">🏠 To: ${escapeHtml(d.beneficiaries.users.full_name || '')}</p>` : ''}
+      
+   <!-- 🆕 Directions and Call Buttons -->
+      <div class="flex gap-2 mb-2">
+        ${donorLat && donorLng ? `
+          <button 
+            onclick="openGoogleMapsDirections(${location.lat}, ${location.lng}, ${donorLat}, ${donorLng}, 'pickup location')" 
+            class="directions-btn flex-1"
+            title="Get directions to pickup location">
+            🗺️ Pickup
+          </button>
+        ` : ''}
+        
+        ${beneficiaryLat && beneficiaryLng && d.beneficiaries ? `
+          <button 
+            onclick="openGoogleMapsDirections(${location.lat}, ${location.lng}, ${beneficiaryLat}, ${beneficiaryLng}, 'beneficiary')" 
+            class="directions-btn flex-1"
+            title="Get directions to beneficiary">
+            🗺️ Drop-off
+          </button>
+        ` : ''}
+      </div>
+      
+      <!-- 🆕 Call Button -->
+      ${d.donors?.phone ? `
+        <a href="tel:${escapeHtml(d.donors.phone)}" class="call-btn w-full mb-2 justify-center" title="Call donor">
+          📞 Call Donor
+        </a>
+      ` : ''}
+      
+      <div class="flex gap-2">
+        <button onclick="openChat('${d.donors?.id || ''}', '${escapeHtml(d.donors?.full_name || '')}')" data-user-id="${d.donors?.id}" class="btn-chat flex-1">
+          💬 Chat ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+        </button>
+        <button onclick="acceptDonation('${d.id}', '${d.beneficiaries?.id || ''}')" class="flex-1 py-2 rounded-lg font-semibold" style="background: #FF6B3D; color: white;">
+          Accept →
+        </button>
+      </div>
+    </div>
+  `;
+  }).join('');
+  updateChatNotifications();
+}
+
+// Enhanced loadNearbyVolunteers with location parameter
+async function loadNearbyVolunteers(location) {
+  if (!location) {
+    location = getCurrentLocation();
+    if (!location) return;
+  }
+
+  const { data } = await supabase
+    .from('users')
+    .select('*')
+    .eq('role', 'volunteer')
+    .eq('is_active', true);
+
+  const container = document.getElementById('nearby-volunteers');
+  if (!container) return;
+  
+  if (!data || data.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No volunteers nearby</div>';
+    return;
+  }
+
+  const sortedData = data.map(v => {
+    const distance = calculateDistance(
+      location.lat,
+      location.lng,
+      v.location_lat,
+      v.location_lng
+    );
+    return { ...v, distance };
+  }).filter(x => x.distance <= 30)
+    .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
+    .slice(0, 10);
+
+  if (sortedData.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No volunteers within 30km</div>';
+    return;
+  }
+
+  container.innerHTML = sortedData.map(v => {
+    const unread = unreadMessages[v.id] || 0;
+    return `
+    <div class="card">
+      <div class="flex justify-between items-start">
+        <div>
+          <h4 class="font-bold">${escapeHtml(v.full_name || '')}</h4>
+          <span class="distance-badge">📍 ${formatDistance(v.distance)}</span>
+          <p class="text-sm text-gray-600 mt-1">🚚 Volunteer</p>
+          <p class="text-sm text-blue-600">📞 ${escapeHtml(v.phone || 'N/A')}</p>
+        </div>
+        <div class="text-3xl">🚚</div>
+      </div>
+      
+<!-- 🆕 Directions and Call Buttons -->
+      ${v.location_lat && v.location_lng ? `
+        <button 
+          onclick="openGoogleMapsDirections(${location.lat}, ${location.lng}, ${v.location_lat}, ${v.location_lng}, '${escapeHtml(v.full_name || 'volunteer')}')" 
+          class="directions-btn w-full mt-3 mb-2">
+          🗺️ Get Directions
+        </button>
+      ` : ''}
+      
+      <!-- 🆕 Call Button -->
+      ${v.phone ? `
+        <a href="tel:${escapeHtml(v.phone)}" class="call-btn w-full mb-2 justify-center" title="Call volunteer">
+          📞 Call Volunteer
+        </a>
+      ` : ''}
+      
+      <button onclick="openChat('${v.id}', '${escapeHtml(v.full_name || '')}')" data-user-id="${v.id}" class="btn-chat w-full mt-2">
+        💬 Chat ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+      </button>
+    </div>
+  `;
+  }).join('');
+  updateChatNotifications();
+}
+
+// Enhanced loadNearbyBeneficiaries with location parameter
+async function loadNearbyBeneficiaries(location) {
+  if (!location) {
+    location = getCurrentLocation();
+    if (!location) return;
+  }
+
+  const { data } = await supabase
+    .from('beneficiaries')
+    .select('*, users!inner(id, full_name, phone, location_lat, location_lng)')
+    .eq('is_accepting_deliveries', true);
+
+  const container = document.getElementById('nearby-beneficiaries');
+  if (!container) return;
+  
+  if (!data || data.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No beneficiaries nearby</div>';
+    return;
+  }
+
+  const sortedData = data.map(b => {
+    const distance = calculateDistance(
+      location.lat,
+      location.lng,
+      b.users.location_lat,
+      b.users.location_lng
+    );
+    return { ...b, distance };
+  }).filter(x => x.distance <= 30)
+    .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
+    .slice(0, 10);
+
+  if (sortedData.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No beneficiaries within 30km</div>';
+    return;
+  }
+
+  container.innerHTML = sortedData.map(b => {
+    const unread = unreadMessages[b.users.id] || 0;
+    return `
+    <div class="card">
+      <div class="flex justify-between items-start">
+        <div>
+          <h4 class="font-bold">${escapeHtml(b.organization_name || b.users.full_name || '')}</h4>
+          <span class="distance-badge">📍 ${formatDistance(b.distance)}</span>
+          <p class="text-sm text-gray-600 mt-1">🏠 ${escapeHtml(b.beneficiary_type || '')}</p>
+          <p class="text-sm text-blue-600">📞 ${escapeHtml(b.users.phone || 'N/A')}</p>
+        </div>
+        <div class="text-3xl">🏠</div>
+      </div>
+      
+<!-- 🆕 Directions and Call Buttons -->
+      ${b.users.location_lat && b.users.location_lng ? `
+        <button 
+          onclick="openGoogleMapsDirections(${location.lat}, ${location.lng}, ${b.users.location_lat}, ${b.users.location_lng}, '${escapeHtml(b.organization_name || b.users.full_name || 'beneficiary')}')" 
+          class="directions-btn w-full mt-3 mb-2">
+          🗺️ Get Directions
+        </button>
+      ` : ''}
+      
+      <!-- 🆕 Call Button -->
+      ${b.users.phone ? `
+        <a href="tel:${escapeHtml(b.users.phone)}" class="call-btn w-full mb-2 justify-center" title="Call beneficiary">
+          📞 Call ${escapeHtml(b.beneficiary_type || 'Beneficiary')}
+        </a>
+      ` : ''}
+      
+      <button onclick="openChat('${b.users.id}', '${escapeHtml(b.organization_name || b.users.full_name || '')}')" data-user-id="${b.users.id}" class="btn-chat w-full mt-2">
+        💬 Chat ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+      </button>
+    </div>
+  `;
+  }).join('');
+  updateChatNotifications();
+}
+// Enhanced loadNearbyDonationsForBeneficiary with location parameter
+async function loadNearbyDonationsForBeneficiary(location) {
+  if (!location) {
+    location = getCurrentLocation();
+    if (!location) return;
+  }
+
+  const { data } = await supabase
+    .from('donations')
+    .select('*, donors:users!donor_id(id, full_name, location_lat, location_lng)')
+    .eq('status', 'posted')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  const container = document.getElementById('nearby-donations-ben');
+  if (!container) return;
+  
+  const validDonations = data?.filter(d => !isDonationExpired(d.expires_at)) || [];
+  
+  if (validDonations.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No donations nearby</div>';
+    return;
+  }
+
+  const sortedData = validDonations.map(d => {
+    const donorLat = d.pickup_lat || d.donors?.location_lat;
+    const donorLng = d.pickup_lng || d.donors?.location_lng;
+    const distance = calculateDistance(
+      location.lat,
+      location.lng,
+      donorLat,
+      donorLng
+    );
+    return { ...d, distance, donorLat, donorLng };
+  }).filter(x => x.distance <= 30)
+    .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
+    .slice(0, 10);
+
+  if (sortedData.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No donations within 30km</div>';
+    return;
+  }
+
+  container.innerHTML = sortedData.map(d => {
+    const unread = unreadMessages[d.donors?.id] || 0;
+    return `
+    <div class="card">
+      <h4 class="font-bold text-lg mb-2">${escapeHtml(d.food_type || '')}</h4>
+      <span class="distance-badge">📍 ${formatDistance(d.distance)} away</span>
+      <p class="text-sm text-gray-600 mt-2">📦 ${d.quantity} ${d.unit}</p>
+      <p class="text-sm text-blue-600">👤 From: ${escapeHtml(d.donors?.full_name || '')}</p>
+      
+<!-- 🆕 Directions and Call Buttons -->
+      ${d.donorLat && d.donorLng ? `
+        <button 
+          onclick="openGoogleMapsDirections(${location.lat}, ${location.lng}, ${d.donorLat}, ${d.donorLng}, 'donor location')" 
+          class="directions-btn w-full mt-3 mb-2">
+          🗺️ Get Directions
+        </button>
+      ` : ''}
+      
+      <!-- 🆕 Call Button -->
+      ${d.donors?.phone ? `
+        <a href="tel:${escapeHtml(d.donors.phone)}" class="call-btn w-full mb-2 justify-center" title="Call donor">
+          📞 Call Donor
+        </a>
+      ` : ''}
+      
+      <button onclick="openChat('${d.donors?.id || ''}', '${escapeHtml(d.donors?.full_name || '')}')" data-user-id="${d.donors?.id}" class="btn-chat w-full mt-2">
+        💬 Chat with Donor ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+      </button>
+    </div>
+  `;
+  }).join('');
+  updateChatNotifications();
+}
+// Enhanced loadNearbyVolunteersForBeneficiary with location parameter
+async function loadNearbyVolunteersForBeneficiary(location) {
+  if (!location) {
+    location = getCurrentLocation();
+    if (!location) return;
+  }
+
+  const { data } = await supabase
+    .from('users')
+    .select('*')
+    .eq('role', 'volunteer')
+    .eq('is_active', true)
+    .limit(50);
+
+  const container = document.getElementById('nearby-volunteers-ben');
+  if (!container) return;
+  
+  if (!data || data.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No volunteers nearby</div>';
+    return;
+  }
+
+  const sortedData = data.map(v => {
+    const distance = calculateDistance(
+      location.lat,
+      location.lng,
+      v.location_lat,
+      v.location_lng
+    );
+    return { ...v, distance };
+  }).filter(x => x.distance <= 30)
+    .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
+    .slice(0, 10);
+
+  if (sortedData.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No volunteers within 30km</div>';
+    return;
+  }
+
+  container.innerHTML = sortedData.map(v => {
+    const unread = unreadMessages[v.id] || 0;
+    return `
+    <div class="card">
+      <h4 class="font-bold">${escapeHtml(v.full_name || '')}</h4>
+      <span class="distance-badge">📍 ${formatDistance(v.distance)}</span>
+      <p class="text-sm text-gray-600 mt-1">🚚 Volunteer</p>
+      <p class="text-sm text-blue-600">📞 ${escapeHtml(v.phone || 'N/A')}</p>
+      
+<!-- 🆕 Directions and Call Buttons -->
+      ${v.location_lat && v.location_lng ? `
+        <button 
+          onclick="openGoogleMapsDirections(${location.lat}, ${location.lng}, ${v.location_lat}, ${v.location_lng}, '${escapeHtml(v.full_name || 'volunteer')}')" 
+          class="directions-btn w-full mt-3 mb-2">
+          🗺️ Get Directions
+        </button>
+      ` : ''}
+      
+      <!-- 🆕 Call Button -->
+      ${v.phone ? `
+        <a href="tel:${escapeHtml(v.phone)}" class="call-btn w-full mb-2 justify-center" title="Call volunteer">
+          📞 Call Volunteer
+        </a>
+      ` : ''}
+      
+      <button onclick="openChat('${v.id}', '${escapeHtml(v.full_name || '')}')" data-user-id="${v.id}" class="btn-chat w-full mt-2">
+        💬 Chat ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+      </button>
+    </div>
+  `;
+  }).join('');
+  updateChatNotifications();
+}
+
+// ============================================
+// END OF NEARBY FUNCTIONS
+// ============================================
+
+// DONATION MANAGEMENT FUNCTIONS
+// ✅ ADD THIS CHECK at the START of showCreateDonation() function
+// Around line 1900
+
+function showCreateDonation() {
+  // **ENHANCED: Smart beneficiary refresh**
+  const location = getCurrentLocation();
+  
+  // ✅ CRITICAL: Only refresh if not already loading
+  if (location && shouldRefreshBeneficiaries() && !beneficiaryLoadInProgress) {
+    console.log('🔄 Refreshing beneficiary list (location changed)');
+    lastBeneficiaryRefreshLocation = { ...location };
+    populateBeneficiarySelect();
+  } else if (!document.getElementById('food-beneficiary').options.length && !beneficiaryLoadInProgress) {
+    populateBeneficiarySelect();
+  }
+  
+  // ✅ CRITICAL: Initialize expiry time validation BEFORE showing modal
+  setMinimumExpiryTime();
+  
+  document.getElementById('create-modal').classList.remove('hide');
+  
+  
+  if (currentUser && (currentUser.role === 'donor' || currentUser.role === 'volunteer')) {
+    document.getElementById('deliver-self-container').classList.remove('hide');
+  } else {
+    document.getElementById('deliver-self-container').classList.add('hide');
+  }
+  
+  document.querySelectorAll('.pickup-btn').forEach(btn => btn.classList.remove('selected'));
+  document.getElementById('pickup-location-text').textContent = '';
+  document.getElementById('inline-pickup-map-container').classList.add('hide');
+  document.getElementById('deliver-self-checkbox').checked = false;
+  deliverSelfMode = false;
+  selectedPickupLocation = null;
+  
+  document.getElementById('pickup-lat').value = '';
+  document.getElementById('pickup-lng').value = '';
+}
+function hideCreateDonation() {
+  console.log('🚪 Closing create donation modal...');
+  
+  document.getElementById('create-modal').classList.add('hide');
+  
+  // ============================================
+  // PHASE 1: Stop expiry validation interval
+  // ============================================
+  const expiryInput = document.getElementById('food-expiry');
+  if (expiryInput) {
+    const intervalId = expiryInput.dataset.updateInterval;
+    if (intervalId) {
+      clearInterval(parseInt(intervalId));
+      console.log('🧹 Cleared expiry validation interval:', intervalId);
+      delete expiryInput.dataset.updateInterval;
+    }
+  }
+  
+  // ============================================
+  // PHASE 2: Clean up inline pickup map
+  // ============================================
+  const mapContainer = document.getElementById('inline-pickup-map-container');
+  const mapElement = document.getElementById('inline-pickup-map');
+  
+  if (inlinePickupMap) {
+    try {
+      console.log('🗺️ Removing inline pickup map...');
+      inlinePickupMap.off();
+      inlinePickupMap.remove();
+      inlinePickupMap = null;
+      inlinePickupMarker = null;
+      selectedPickupLocation = null;
+      console.log('✅ Inline pickup map cleaned up');
+    } catch(e) {
+      console.error('❌ Error cleaning up inline pickup map:', e);
+      // Force cleanup
+      inlinePickupMap = null;
+      inlinePickupMarker = null;
+      selectedPickupLocation = null;
+    }
+  }
+  
+  window.inlineMapInitializing = false;
+  
+  if (mapElement) {
+    mapElement.innerHTML = '';
+    mapElement.style.height = '300px';
+  }
+  
+  if (mapContainer) {
+    mapContainer.classList.add('hide');
+  }
+  
+  // ============================================
+  // PHASE 3: Reset ALL form fields
+  // ============================================
+  document.getElementById('food-type').value = '';
+  document.getElementById('food-quantity').value = '';
+  document.getElementById('food-unit').value = 'kg';
+  document.getElementById('food-instructions').value = '';
+  document.getElementById('food-beneficiary').value = '';
+  document.getElementById('pickup-lat').value = '';
+  document.getElementById('pickup-lng').value = '';
+  document.getElementById('pickup-location-text').textContent = '';
+  document.getElementById('deliver-self-checkbox').checked = false;
+  deliverSelfMode = false;
+  
+  const vegRadio = document.querySelector('input[name="food-category"][value="veg"]');
+  if (vegRadio) vegRadio.checked = true;
+  
+  // ============================================
+  // PHASE 4: Complete expiry input cleanup
+  // ============================================
+  if (expiryInput) {
+    const newExpiryInput = expiryInput.cloneNode(true);
+    newExpiryInput.value = '';
+    newExpiryInput.removeAttribute('min');
+    newExpiryInput.removeAttribute('data-update-interval');
+    newExpiryInput.setCustomValidity('');
+    newExpiryInput.classList.remove('invalid-time', 'valid-time');
+    newExpiryInput.style.borderColor = '';
+    newExpiryInput.style.backgroundColor = '';
+    
+    expiryInput.parentNode.replaceChild(newExpiryInput, expiryInput);
+    console.log('♻️ Expiry input reset and event listeners removed');
+  }
+  
+  // ============================================
+  // PHASE 5: Reset pickup method buttons
+  // ============================================
+  document.querySelectorAll('.pickup-btn').forEach(btn => {
+    btn.classList.remove('selected');
+  });
+  
+  console.log('✅ Create donation modal fully cleaned up');
+}
+function toggleDeliverSelf() {
+  deliverSelfMode = document.getElementById('deliver-self-checkbox').checked;
+}
+
+
+
+async function populateBeneficiarySelect() {
+  const sel = document.getElementById('food-beneficiary');
+  
+  // ✅ Prevent concurrent loads
+  if (beneficiaryLoadInProgress) {
+    console.log('⏳ Beneficiary load already in progress');
+    return;
+  }
+  
+  if (!currentUser) {
+    sel.innerHTML = '<option value="">⚠️ Please login first</option>';
+    sel.disabled = false;
+    return;
+  }
+
+  beneficiaryLoadInProgress = true;
+  
+  try {
+    const location = getCurrentLocation();
+    
+    if (!location) {
+      sel.innerHTML = '<option value="" disabled>📍 Waiting for GPS... Please wait</option>';
+      sel.disabled = true;
+      // Retry after GPS initializes
+      setTimeout(() => {
+        beneficiaryLoadInProgress = false;
+        populateBeneficiarySelect();
+      }, 2000);
+      return;
+    }
+
+    sel.innerHTML = '<option value="" disabled>🔄 Loading beneficiaries...</option>';
+    sel.disabled = true;
+
+    const { data, error } = await supabase
+      .from('beneficiaries')
+      .select('*, users!inner(id, full_name, location_lat, location_lng)')
+      .eq('is_accepting_deliveries', true);
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      sel.innerHTML = '<option value="">No beneficiaries available</option>';
+      sel.disabled = false;
+      return;
+    }
+
+    const beneficiariesWithDistance = data.map(b => {
+      const distance = calculateDistance(
+        location.lat,
+        location.lng,
+        b.users.location_lat,
+        b.users.location_lng
+      );
+      return { ...b, distance };
+    })
+    .filter(b => b.distance <= 30)
+    .sort((a, b) => a.distance - b.distance);
+
+    sel.innerHTML = '<option value="">Select beneficiary...</option>';
+
+    if (beneficiariesWithDistance.length === 0) {
+      const noNearbyOption = document.createElement('option');
+      noNearbyOption.disabled = true;
+      noNearbyOption.textContent = 'No beneficiaries within 30km of your current location';
+      sel.appendChild(noNearbyOption);
+      sel.disabled = false;
+      return;
+    }
+
+    beneficiariesWithDistance.forEach(b => {
+      const name = b.organization_name || b.users.full_name;
+      const prefs = [];
+      if (b.accepts_veg) prefs.push('Veg');
+      if (b.accepts_nonveg) prefs.push('Non-Veg');
+      const prefText = prefs.length > 0 ? ` [${prefs.join(', ')}]` : '';
+      
+      const option = document.createElement('option');
+      option.value = b.id;
+      option.textContent = `${name} (${formatDistance(b.distance)})${prefText}`;
+      sel.appendChild(option);
+    });
+
+    const infoOption = document.createElement('option');
+    infoOption.disabled = true;
+    infoOption.style.fontStyle = 'italic';
+    infoOption.style.fontSize = '11px';
+    infoOption.textContent = `📍 Showing ${beneficiariesWithDistance.length} beneficiaries within 30km`;
+    sel.appendChild(infoOption);
+
+  } catch (error) {
+    console.error('Failed to load beneficiaries:', error);
+    sel.innerHTML = '<option value="">❌ Error loading beneficiaries</option>';
+  } finally {
+    sel.disabled = false;
+    beneficiaryLoadInProgress = false;
+  }
+}
+// **NEW: Helper function to check if beneficiaries need refresh**
+function shouldRefreshBeneficiaries() {
+  const location = getCurrentLocation();
+  if (!location || !lastBeneficiaryRefreshLocation) return true;
+  
+  const distance = calculateDistance(
+    lastBeneficiaryRefreshLocation.lat,
+    lastBeneficiaryRefreshLocation.lng,
+    location.lat,
+    location.lng
+  );
+  
+  // Refresh if moved more than 1km
+  return distance > 1;
+}
+
+async function submitDonation() {
+  const submitBtnId = 'submit-donation-btn';
+  
+  // Basic validation BEFORE locking
+  const foodType = document.getElementById('food-type').value.trim();
+  const category = document.querySelector('input[name="food-category"]:checked')?.value;
+  const quantity = document.getElementById('food-quantity').value;
+  const unit = document.getElementById('food-unit').value;
+  const expiry = document.getElementById('food-expiry').value;
+  const pickupLat = document.getElementById('pickup-lat').value;
+  const pickupLng = document.getElementById('pickup-lng').value;
+  const selectedBeneficiary = document.getElementById('food-beneficiary').value || null;
+
+  // ✅ CRITICAL: Do ALL validation BEFORE locking button
+  if (!foodType) {
+    alert('⚠️ Please enter the food type (e.g., Rice, Dal, Vegetables)');
+    document.getElementById('food-type').focus();
+    return;
+  }
+
+  if (!quantity || parseFloat(quantity) <= 0) {
+    alert('⚠️ Please enter a valid quantity greater than 0');
+    document.getElementById('food-quantity').focus();
+    return;
+  }
+
+  if (!expiry) {
+    alert('⚠️ Please select an expiry time');
+    document.getElementById('food-expiry').focus();
+    return;
+  }
+
+  if (!category) {
+    alert('⚠️ Please select food category (Veg or Non-Veg)');
+    return;
+  }
+
+  // Strict expiry validation
+  const expiryDate = new Date(expiry);
+  const now = new Date();
+  const timeDiffMinutes = Math.floor((expiryDate - now) / 60000);
+  
+  if (timeDiffMinutes < 1) {
+    alert(
+      `❌ Invalid Expiry Time!\n\n` +
+      `Current time: ${now.toLocaleString()}\n` +
+      `Selected time: ${expiryDate.toLocaleString()}\n\n` +
+      `Expiry must be at least 1 minute in the future.`
+    );
+    document.getElementById('food-expiry').focus();
+    return;
+  }
+  
+  if (timeDiffMinutes > 10080) {
+    alert('⚠️ Expiry time cannot be more than 7 days in the future.');
+    document.getElementById('food-expiry').focus();
+    return;
+  }
+
+  // Validate pickup location
+  if (!pickupLat || !pickupLng) {
+    alert('⚠️ Please select a pickup location');
+    return;
+  }
+
+  const lat = parseFloat(pickupLat);
+  const lng = parseFloat(pickupLng);
+  if (isNaN(lat) || isNaN(lng) || !isValidCoordinate(lat, lng)) {
+    alert('⚠️ Invalid pickup location. Please select again.');
+    return;
+  }
+
+  // Check deliver-self + beneficiary conflict
+  if (deliverSelfMode && !selectedBeneficiary) {
+    alert('⚠️ When delivering yourself, you must select a beneficiary.');
+    document.getElementById('food-beneficiary').focus();
+    return;
+  }
+
+ // ✅ NOW lock the button after all synchronous validation passes
+  if (buttonStates.get(submitBtnId)) {
+    console.log('⏳ Donation submission already in progress...');
+    return;
+  }
+  
+  buttonStates.set(submitBtnId, true);
+  
+  const submitBtn = document.querySelector('#create-modal button[onclick="submitDonation()"]');
+  const originalText = submitBtn ? submitBtn.textContent : 'Post';
+  
+// ✅ ENHANCE submitDonation() - ADD LOADING SPINNER
+// Replace line ~2090 where button text is changed
+
+if (submitBtn) {
+  submitBtn.disabled = true;
+  submitBtn.style.opacity = '0.6';
+  submitBtn.style.cursor = 'not-allowed';
+  // ✅ ADD THIS LINE for loading spinner:
+  submitBtn.innerHTML = '<span style="display: inline-block; width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px;"></span>Posting...';
+  
+  // ✨ NEW: Disable entire form during submission
+  const formInputs = document.querySelectorAll('#create-modal input, #create-modal select, #create-modal textarea, #create-modal button:not([onclick="submitDonation()"])');
+  formInputs.forEach(input => {
+    input.disabled = true;
+    input.style.opacity = '0.5';
+  });
+}
+  try {
+    const pickupAddress = await reverseGeocode(lat, lng);
+    
+    const donationData = {
+      donor_id: currentUser.id,
+      food_type: foodType,
+      is_veg: category === 'veg',
+      quantity: parseFloat(quantity),
+      unit: unit,
+      expires_at: expiry,
+      pickup_location: `POINT(${lng} ${lat})`,
+      pickup_lat: lat,
+      pickup_lng: lng,
+      pickup_address: pickupAddress,
+      available_from: new Date().toISOString(),
+      available_to: expiry,
+      special_instructions: document.getElementById('food-instructions').value.trim(),
+      status: deliverSelfMode ? 'accepted' : 'posted',
+      beneficiary_id: selectedBeneficiary || null,
+      volunteer_id: deliverSelfMode ? currentUser.id : null,
+      created_at: new Date().toISOString()
+    };
+
+    console.log('📤 Submitting donation to database...');
+    const { error } = await supabase.from('donations').insert(donationData);
+
+    if (error) {
+      console.error('❌ Database error:', error);
+      throw error;
+    }
+
+    console.log('✅ Donation created successfully');
+
+    if (deliverSelfMode) {
+      showNotification('✅ Success', 'Donation posted! You are assigned as the delivery volunteer.', 'success');
+    } else {
+      showNotification('✅ Success', 'Donation posted! Volunteers nearby will be notified.', 'success');
+    }
+    
+    hideCreateDonation();
+    await updateUserStats();
+    loadHomeContent();
+    
+  } catch (error) {
+    console.error('❌ Donation submission failed:', error);
+    alert('❌ Failed to post donation: ' + (error.message || 'Unknown error'));
+ } finally {
+  // ✅ CRITICAL: Always unlock after 2 seconds
+  setTimeout(() => {
+    buttonStates.delete(submitBtnId);
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '';
+      submitBtn.style.cursor = '';
+      submitBtn.textContent = originalText; // This will remove the spinner
+    }
+    
+    // ✅ NEW: Re-enable form inputs
+    const formInputs = document.querySelectorAll('#create-modal input, #create-modal select, #create-modal textarea, #create-modal button');
+    formInputs.forEach(input => {
+      input.disabled = false;
+      input.style.opacity = '';
+    });
+    
+    console.log('🔓 Donation submission unlocked');
+  }, 2000);
+}
+}
+async function acceptDonation(donationId, existingBeneficiaryId) {
+  if (!donationId) return;
+  
+  // ✅ CRITICAL FIX: Use unique button key per donation
+  const buttonKey = `accept-donation-${donationId}`;
+  
+  if (buttonStates.get(buttonKey)) {
+    console.log('⏳ Already processing this donation...');
+    return;
+  }
+  
+  if (existingBeneficiaryId) {
+    if (!confirm('Accept this donation for delivery?')) return;
+
+    // ✅ Lock BEFORE async operation
+    buttonStates.set(buttonKey, true);
+    
+    // Disable the button visually
+    const acceptBtn = document.querySelector(`button[onclick="acceptDonation('${donationId}', '${existingBeneficiaryId}')"]`);
+    if (acceptBtn) {
+      acceptBtn.disabled = true;
+      acceptBtn.textContent = 'Processing...';
+      acceptBtn.style.opacity = '0.6';
+    }
+
+    try {
+      const { error } = await supabase
+        .from('donations')
+        .update({
+          volunteer_id: currentUser.id,
+          status: 'accepted',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', donationId)
+        .eq('status', 'posted');
+
+      if (error) throw error;
+
+      showNotification('Success', 'Donation accepted! Contact the donor to arrange pickup.', 'success');
+      await updateUserStats();
+      loadNearbyContent();
+    } catch (error) {
+      alert('Error: ' + (error.message || error));
+      console.error(error);
+    } finally {
+      // ✅ Unlock after delay
+      setTimeout(() => {
+        buttonStates.delete(buttonKey);
+        if (acceptBtn) {
+          acceptBtn.disabled = false;
+          acceptBtn.textContent = 'Accept →';
+          acceptBtn.style.opacity = '';
+        }
+      }, 2000);
+    }
+  } else {
+    currentAcceptingDonationId = donationId;
+    await showBeneficiarySelectionModal();
+  }
+}
+
+async function showBeneficiarySelectionModal() {
+  try {
+    // Get current location (GPS or fallback)
+    const location = getCurrentLocation();
+    
+    if (!location) {
+      alert('❌ Unable to get your current location. Please enable GPS or check your browser settings.');
+      return;
+    }
+
+    const { data: beneficiaries, error } = await supabase
+      .from('beneficiaries')
+      .select('*, users!inner(id, full_name, location_lat, location_lng)')
+      .eq('is_accepting_deliveries', true);
+
+    if (error) throw error;
+
+    if (!beneficiaries || beneficiaries.length === 0) {
+      alert('No beneficiaries available. Please try again later.');
+      return;
+    }
+
+    // Calculate distance from CURRENT location (GPS or fallback)
+    const sortedBeneficiaries = beneficiaries.map(b => {
+      const distance = calculateDistance(
+        location.lat,
+        location.lng,
+        b.users.location_lat,
+        b.users.location_lng
+      );
+      return { ...b, distance };
+    })
+    .filter(x => x.distance <= 30) // Only show within 30km
+    .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+
+    if (sortedBeneficiaries.length === 0) {
+      alert('❌ No beneficiaries found within 30km of your current location.\n\n📍 Your location: ' + 
+            location.lat.toFixed(6) + ', ' + location.lng.toFixed(6) +
+            (location.isFallback ? '\n\n⚠️ Using saved location. Enable GPS for real-time tracking.' : ''));
+      return;
+    }
+
+    const container = document.getElementById('beneficiary-list-modal');
+    container.innerHTML = `
+      <div class="info-box" style="margin-bottom: 12px;">
+        📍 Showing beneficiaries within 30km of your ${location.isFallback ? 'saved' : 'current'} location
+        ${location.isFallback ? '<br><span style="font-size: 11px;">⚠️ Enable GPS for real-time distance tracking</span>' : ''}
+      </div>
+    ` + sortedBeneficiaries.map(b => `
+      <div class="location-option" id="beneficiary-option-${b.id}" onclick="selectBeneficiary('${b.id}')">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="font-semibold">${escapeHtml(b.organization_name || b.users.full_name || '')}</div>
+            <div class="text-sm text-gray-600">
+              ${escapeHtml(b.beneficiary_type || '')} • 
+              <span class="distance-badge" style="display: inline-block; margin-left: 4px;">
+                📍 ${formatDistance(b.distance)}
+              </span>
+            </div>
+            <div class="mt-2">
+              <div class="text-xs text-gray-500 mb-1">Food Preferences:</div>
+              ${getFoodPreferenceDisplay(b)}
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    chosenBeneficiaryId = null;
+    document.getElementById('confirm-beneficiary-btn').disabled = true;
+    document.getElementById('beneficiary-modal').classList.remove('hide');
+  } catch (error) {
+    console.error('Failed to load beneficiaries:', error);
+    alert('Error loading beneficiaries. Please try again.');
+  }
+}
+
+async function confirmBeneficiarySelection() {
+  if (!currentAcceptingDonationId || !chosenBeneficiaryId) return;
+  
+  // Prevent double-click
+  if (buttonStates.get('confirm-beneficiary')) {
+    return;
+  }
+  
+  if (!confirm('Confirm acceptance and assign selected beneficiary?')) return;
+
+  buttonStates.set('confirm-beneficiary', true);
+  
+  const confirmBtn = document.getElementById('confirm-beneficiary-btn');
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Processing...';
+  }
+
+  try {
+    const { error } = await supabase
+      .from('donations')
+      .update({
+        volunteer_id: currentUser.id,
+        beneficiary_id: chosenBeneficiaryId,
+        status: 'accepted',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', currentAcceptingDonationId)
+      .eq('status', 'posted');
+
+    if (error) throw error;
+
+    showNotification('Success', 'Donation accepted and beneficiary assigned!', 'success');
+    closeBeneficiaryModal();
+    await updateUserStats();
+    loadNearbyContent();
+  } catch (error) {
+    alert('Error: ' + (error.message || error));
+    console.error(error);
+  } finally {
+    setTimeout(() => {
+      buttonStates.delete('confirm-beneficiary');
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Accept Donation';
+      }
+    }, 2000);
+  }
+}
+async function updateStatus(donationId, status) {
+  // Prevent double-click
+  const buttonKey = `status-${donationId}-${status}`;
+  if (buttonStates.get(buttonKey)) {
+    return;
+  }
+  
+  buttonStates.set(buttonKey, true);
+
+  try {
+    const { error } = await supabase
+      .from('donations')
+      .update({ status: status, updated_at: new Date().toISOString() })
+      .eq('id', donationId);
+
+    if (error) throw error;
+    showNotification('Success', 'Status updated', 'success');
+    loadTrackingContent();
+    loadHomeContent();
+  } catch (error) {
+    alert('Failed to update status');
+    console.error(error);
+  } finally {
+    setTimeout(() => buttonStates.delete(buttonKey), 2000);
+  }
+}
+
+async function submitDelivery() {
+  const count = parseInt(document.getElementById('people-served').value || '0', 10);
+  const donationId = window.currentDeliveryId;
+  
+  if (!donationId || !count || count < 1) {
+    alert('Enter valid served count');
+    return;
+  }
+
+  // Prevent double-click
+  if (buttonStates.get('submit-delivery')) {
+    return;
+  }
+  
+  buttonStates.set('submit-delivery', true);
+
+  try {
+    const { error } = await supabase
+      .from('donations')
+      .update({ 
+        status: 'delivered', 
+        actual_people_served: count, 
+        delivered_at: new Date().toISOString(), 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', donationId);
+
+    if (error) throw error;
+
+    showNotification('Success', 'Delivery completed. Thank you! 🎉', 'success');
+    closeDeliveryModal();
+    await updateUserStats();
+    loadHistoryContent();
+  } catch (error) {
+    alert('Failed to complete delivery');
+    console.error(error);
+  } finally {
+    setTimeout(() => buttonStates.delete('submit-delivery'), 2000);
+  }
+}
+// TRACKING CONTENT
+async function loadTrackingContent() {
+  const content = document.getElementById('content-area');
+  content.innerHTML = '<div id="tracking-list"></div>';
+
+  let query = supabase
+    .from('donations')
+    .select('*, donors:users!donor_id(full_name, location_lat, location_lng), volunteers:users!volunteer_id(full_name, location_lat, location_lng), beneficiaries:beneficiaries(*, users!inner(full_name, location_lat, location_lng))')
+    .in('status', ['accepted', 'picked_up']);
+
+  if (!currentUser) {
+    content.innerHTML = '<div class="card text-center">Please login to see tracking info.</div>';
+    return;
+  }
+
+  if (currentUser.role === 'donor') {
+    query = query.eq('donor_id', currentUser.id);
+  } else if (currentUser.role === 'volunteer') {
+    query = query.eq('volunteer_id', currentUser.id);
+  } else {
+    query = query.eq('beneficiary_id', currentUser.beneficiaries?.[0]?.id);
+  }
+
+  const { data } = await query.order('created_at', { ascending: false });
+
+  const container = document.getElementById('tracking-list');
+  
+  const activeTracking = data?.filter(d => !isDonationExpired(d.expires_at)) || [];
+  
+  if (activeTracking.length === 0) {
+    container.innerHTML = '<div class="card text-center text-gray-400">No deliveries in progress</div>';
+    return;
+  }
+
+  container.innerHTML = activeTracking.map(d => `
+    <div class="card">
+      <h4 class="font-bold text-lg mb-3">${escapeHtml(d.food_type || '')}</h4>
+
+      <div class="status-tracker">
+        <div class="status-step completed">
+          <div class="status-dot">✓</div>
+          <div class="text-xs">Posted</div>
+        </div>
+        <div class="status-step ${(d.status === 'accepted' || d.status === 'picked_up') ? 'completed' : 'active'}">
+          <div class="status-dot">${(d.status === 'accepted' || d.status === 'picked_up') ? '✓' : '2'}</div>
+          <div class="text-xs">Accepted</div>
+        </div>
+        <div class="status-step ${d.status === 'picked_up' ? 'active' : ''}">
+          <div class="status-dot">${d.status === 'picked_up' ? '✓' : '3'}</div>
+          <div class="text-xs">Picked Up</div>
+        </div>
+        <div class="status-step">
+          <div class="status-dot">4</div>
+          <div class="text-xs">Delivered</div>
+        </div>
+      </div>
+
+      <div id="tracking-map-${d.id}" style="height: 300px; width: 100%; border-radius: 12px; margin: 12px 0;"></div>
+
+      <div class="mt-4 space-y-1">
+        <p class="text-sm text-gray-600">📦 ${d.quantity} ${d.unit}</p>
+        ${d.donors ? `<p class="text-sm text-blue-600">👤 Donor: ${escapeHtml(d.donors.full_name || '')}</p>` : ''}
+        ${d.volunteers ? `<p class="text-sm text-green-600">🚚 Volunteer: ${escapeHtml(d.volunteers.full_name || '')}</p>` : ''}
+        ${d.beneficiaries ? `<p class="text-sm text-purple-600">🏠 To: ${escapeHtml(d.beneficiaries.users.full_name || '')}</p>` : ''}
+        <p class="text-sm text-gray-500">Created: ${d.created_at ? new Date(d.created_at).toLocaleString() : ''}</p>
+      </div>
+    </div>
+  `).join('');
+
+setTimeout(() => {
+  activeTracking.forEach(d => initEnhancedTrackingMap(d));
+}, 150);
+}
+
+// ============================================
+// ENHANCED TRACKING MAP WITH LIVE UPDATES
+// ============================================
+
+function initEnhancedTrackingMap(donation) {
+  const mapId = `tracking-map-${donation.id}`;
+  
+  // Clean up existing map
+  if (trackingMaps[mapId]) {
+    try { trackingMaps[mapId].remove(); } catch(e) {}
+  }
+
+  const donorLat = donation.pickup_lat || donation.donors?.location_lat;
+  const donorLng = donation.pickup_lng || donation.donors?.location_lng;
+  const beneficiaryLat = donation.beneficiaries?.users.location_lat;
+  const beneficiaryLng = donation.beneficiaries?.users.location_lng;
+
+  if (!donorLat || !donorLng || !beneficiaryLat || !beneficiaryLng) {
+    document.getElementById(mapId).innerHTML = '<div class="text-center text-gray-400 py-8">Map unavailable - Location data missing</div>';
+    return;
+  }
+
+  // Create map with better visuals
+  const map = L.map(mapId, { 
+    zoomControl: true,
+    attributionControl: false,
+    preferCanvas: true
+  }).setView([donorLat, donorLng], 13);
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(map);
+
+  // Custom marker icons
+  const pickupIcon = L.divIcon({
+    className: 'custom-icon',
+    html: `<div style="background: #2196F3; color: white; padding: 10px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 12px rgba(33,150,244,0.4);">📍</div>`,
+    iconSize: [44, 44],
+    iconAnchor: [22, 44]
+  });
+
+  const deliveryIcon = L.divIcon({
+    className: 'custom-icon',
+    html: `<div style="background: #4CAF50; color: white; padding: 10px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 12px rgba(76,175,80,0.4);">🏠</div>`,
+    iconSize: [44, 44],
+    iconAnchor: [22, 44]
+  });
+
+  const volunteerIcon = L.divIcon({
+    className: 'custom-icon',
+    html: `<div style="background: #FF6B3D; color: white; padding: 10px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 12px rgba(255,107,61,0.4); animation: pulse 2s infinite;">🚚</div>`,
+    iconSize: [44, 44],
+    iconAnchor: [22, 44]
+  });
+
+  // Add markers with popups
+  L.marker([donorLat, donorLng], { icon: pickupIcon })
+    .addTo(map)
+    .bindPopup(`<strong>📦 Pickup Location</strong><br>${donation.pickup_address || 'Donor location'}`);
+
+  L.marker([beneficiaryLat, beneficiaryLng], { icon: deliveryIcon })
+    .addTo(map)
+    .bindPopup(`<strong>🏠 Delivery Location</strong><br>${donation.beneficiaries?.users?.full_name || 'Beneficiary'}`);
+
+  // Add volunteer marker if location available
+  if (donation.volunteers?.location_lat && donation.volunteers?.location_lng) {
+    L.marker([donation.volunteers.location_lat, donation.volunteers.location_lng], { icon: volunteerIcon })
+      .addTo(map)
+      .bindPopup(`<strong>🚚 Volunteer</strong><br>${donation.volunteers.full_name || 'En route'}`);
+  }
+
+  // Draw animated route line
+  const routeLine = L.polyline([
+    [donorLat, donorLng],
+    [beneficiaryLat, beneficiaryLng]
+  ], {
+    color: donation.status === 'picked_up' ? '#4CAF50' : '#FF9800',
+    weight: 4,
+    opacity: 0.7,
+    dashArray: '10, 10',
+    className: 'animated-route'
+  }).addTo(map);
+
+  // Add distance label
+  const distance = calculateDistance(donorLat, donorLng, beneficiaryLat, beneficiaryLng);
+  const midPoint = [
+    (donorLat + beneficiaryLat) / 2,
+    (donorLng + beneficiaryLng) / 2
+  ];
+
+  L.marker(midPoint, {
+    icon: L.divIcon({
+      className: 'distance-label',
+      html: `<div style="background: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; color: #1976D2; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">📏 ${formatDistance(distance)}</div>`,
+      iconSize: [80, 30],
+      iconAnchor: [40, 15]
+    })
+  }).addTo(map);
+
+  // Fit bounds with padding
+  map.fitBounds([
+    [donorLat, donorLng],
+    [beneficiaryLat, beneficiaryLng]
+  ], { padding: [60, 60] });
+
+  trackingMaps[mapId] = map;
+
+  // Force render
+  setTimeout(() => {
+    if (map) map.invalidateSize();
+  }, 250);
+}
+function initTrackingMap(donation) {
+  initEnhancedTrackingMap(donation);
+}
+
+// ============================================
+// ENHANCED HISTORY CONTENT WITH FILTERS
+// ============================================
+
+let currentHistoryFilter = 'all';
+let currentSearchQuery = '';
+
+async function loadHistoryContent() {
+  const content = document.getElementById('content-area');
+  
+  content.innerHTML = `
+    <div class="mb-4">
+      <h3 class="text-lg font-bold mb-3">📜 Donation History</h3>
+      
+      <!-- Search Bar -->
+      <div class="mb-3">
+        <input 
+          type="text" 
+          id="history-search" 
+          placeholder="🔍 Search by food type, donor, volunteer..."
+          class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 outline-none"
+          oninput="debounceHistorySearch(this.value)"
+        />
+      </div>
+      
+      <!-- Filter Tabs -->
+      <div class="flex gap-2 overflow-x-auto pb-2 mb-3" style="scrollbar-width: none;">
+        <button onclick="filterHistory('all')" id="filter-all" class="filter-tab active px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap" style="background: #FF6B3D; color: white;">
+          All
+        </button>
+        <button onclick="filterHistory('delivered')" id="filter-delivered" class="filter-tab px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap" style="background: #E0E0E0; color: #666;">
+          ✅ Delivered
+        </button>
+        <button onclick="filterHistory('expired')" id="filter-expired" class="filter-tab px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap" style="background: #E0E0E0; color: #666;">
+          ⏰ Expired
+        </button>
+        <button onclick="filterHistory('this_week')" id="filter-this_week" class="filter-tab px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap" style="background: #E0E0E0; color: #666;">
+          📅 This Week
+        </button>
+        <button onclick="filterHistory('this_month')" id="filter-this_month" class="filter-tab px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap" style="background: #E0E0E0; color: #666;">
+          📆 This Month
+        </button>
+        <button onclick="showDateRangePicker()" id="filter-custom" class="filter-tab px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap" style="background: #E0E0E0; color: #666;">
+          📊 Custom Range
+        </button>
+      </div>
+
+      <!-- Date Range Picker (Hidden by default) -->
+      <div id="date-range-picker" class="hide mb-3 p-3 bg-blue-50 rounded-xl">
+        <div class="flex gap-2 items-center">
+          <div class="flex-1">
+            <label class="text-xs font-semibold text-gray-600">From</label>
+            <input type="date" id="date-from" class="w-full p-2 border rounded-lg" />
+          </div>
+          <div class="flex-1">
+            <label class="text-xs font-semibold text-gray-600">To</label>
+            <input type="date" id="date-to" class="w-full p-2 border rounded-lg" />
+          </div>
+          <button onclick="applyCustomDateRange()" class="btn-primary" style="width: auto; padding: 10px 20px; margin-top: 18px;">
+            Apply
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Summary -->
+      <div id="history-stats" class="grid grid-cols-3 gap-2 mb-3"></div>
+    </div>
+    
+    <div id="history-list"></div>
+  `;
+
+  await refreshHistoryData();
+}
+
+let historySearchTimeout;
+function debounceHistorySearch(query) {
+  clearTimeout(historySearchTimeout);
+  currentSearchQuery = query.toLowerCase();
+  historySearchTimeout = setTimeout(() => {
+    refreshHistoryData();
+  }, 300);
+}
+
+async function filterHistory(filter) {
+  currentHistoryFilter = filter;
+  
+  // Update tab styles
+  document.querySelectorAll('.filter-tab').forEach(btn => {
+    btn.style.background = '#E0E0E0';
+    btn.style.color = '#666';
+  });
+  
+  const activeBtn = document.getElementById(`filter-${filter}`);
+  if (activeBtn) {
+    activeBtn.style.background = '#FF6B3D';
+    activeBtn.style.color = 'white';
+  }
+  
+  // Hide date picker for non-custom filters
+  if (filter !== 'custom') {
+    document.getElementById('date-range-picker').classList.add('hide');
+  }
+  
+  await refreshHistoryData();
+}
+
+function showDateRangePicker() {
+  currentHistoryFilter = 'custom';
+  
+  document.querySelectorAll('.filter-tab').forEach(btn => {
+    btn.style.background = '#E0E0E0';
+    btn.style.color = '#666';
+  });
+  
+  document.getElementById('filter-custom').style.background = '#FF6B3D';
+  document.getElementById('filter-custom').style.color = 'white';
+  
+  document.getElementById('date-range-picker').classList.remove('hide');
+  
+  // Set default dates
+  const today = new Date().toISOString().split('T')[0];
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  document.getElementById('date-from').value = weekAgo;
+  document.getElementById('date-to').value = today;
+}
+
+async function applyCustomDateRange() {
+  const dateFrom = document.getElementById('date-from').value;
+  const dateTo = document.getElementById('date-to').value;
+  
+  if (!dateFrom || !dateTo) {
+    alert('Please select both start and end dates');
+    return;
+  }
+  
+  if (new Date(dateFrom) > new Date(dateTo)) {
+    alert('Start date must be before end date');
+    return;
+  }
+  
+  await refreshHistoryData(dateFrom, dateTo);
+}
+
+async function refreshHistoryData(customDateFrom = null, customDateTo = null) {
+  let query = supabase
+    .from('donations')
+    .select('*, donors:users!donor_id(full_name, phone), volunteers:users!volunteer_id(full_name, phone), beneficiaries:beneficiaries(*, users!inner(full_name, phone))');
+
+  if (currentUser.role === 'donor') {
+    query = query.eq('donor_id', currentUser.id);
+  } else if (currentUser.role === 'volunteer') {
+    query = query.eq('volunteer_id', currentUser.id);
+  } else {
+    query = query.eq('beneficiary_id', currentUser.beneficiaries?.[0]?.id);
+  }
+
+  // Apply filters
+  const now = new Date();
+  
+  if (currentHistoryFilter === 'delivered') {
+    query = query.eq('status', 'delivered');
+  } else if (currentHistoryFilter === 'expired') {
+    query = query.lt('expires_at', now.toISOString()).neq('status', 'delivered');
+  } else if (currentHistoryFilter === 'this_week') {
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    query = query.gte('created_at', weekAgo.toISOString());
+  } else if (currentHistoryFilter === 'this_month') {
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    query = query.gte('created_at', monthAgo.toISOString());
+  } else if (currentHistoryFilter === 'custom' && customDateFrom && customDateTo) {
+    query = query.gte('created_at', new Date(customDateFrom).toISOString())
+                 .lte('created_at', new Date(customDateTo + 'T23:59:59').toISOString());
+  } else if (currentHistoryFilter === 'all') {
+    query = query.or(`status.eq.delivered,expires_at.lt.${now.toISOString()}`);
+  }
+
+  const { data } = await query.order('created_at', { ascending: false }).limit(100);
+
+  // Apply search filter
+  let filteredData = data || [];
+  if (currentSearchQuery) {
+    filteredData = filteredData.filter(d => {
+      const searchableText = [
+        d.food_type,
+        d.donors?.full_name,
+        d.volunteers?.full_name,
+        d.beneficiaries?.users?.full_name,
+        d.beneficiaries?.organization_name
+      ].filter(Boolean).join(' ').toLowerCase();
+      
+      return searchableText.includes(currentSearchQuery);
+    });
+  }
+
+  // Calculate stats
+  const deliveredCount = filteredData.filter(d => d.status === 'delivered').length;
+  const expiredCount = filteredData.filter(d => isDonationExpired(d.expires_at) && d.status !== 'delivered').length;
+  const totalServed = filteredData.filter(d => d.status === 'delivered').reduce((sum, d) => sum + (d.actual_people_served || 0), 0);
+
+  // Display stats
+  const statsContainer = document.getElementById('history-stats');
+  if (statsContainer) {
+    statsContainer.innerHTML = `
+      <div class="card text-center p-2">
+        <div class="text-xl font-bold text-green-600">${deliveredCount}</div>
+        <div class="text-xs text-gray-600">Delivered</div>
+      </div>
+      <div class="card text-center p-2">
+        <div class="text-xl font-bold text-gray-600">${expiredCount}</div>
+        <div class="text-xs text-gray-600">Expired</div>
+      </div>
+      <div class="card text-center p-2">
+        <div class="text-xl font-bold text-blue-600">${totalServed}</div>
+        <div class="text-xs text-gray-600">People Served</div>
+      </div>
+    `;
+  }
+
+  // Display results
+  const container = document.getElementById('history-list');
+  if (!container) return;
+  
+  if (filteredData.length === 0) {
+    container.innerHTML = `
+      <div class="card text-center" style="padding: 40px;">
+        <div class="text-5xl mb-3">📭</div>
+        <div class="text-gray-600 font-semibold">No History Found</div>
+        <p class="text-sm text-gray-400 mt-2">
+          ${currentSearchQuery ? 'Try a different search term' : 'Try changing your filter'}
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filteredData.map(d => {
+    const isSelfDelivery = d.donor_id === d.volunteer_id;
+    const isExpired = isDonationExpired(d.expires_at) && d.status !== 'delivered';
+    const beneficiaryName = d.beneficiaries?.users?.full_name || d.beneficiaries?.organization_name || '';
+    const displayDate = d.delivered_at || d.expires_at || d.created_at;
+    
+    return `
+      <div class="card" style="opacity: ${isExpired ? 0.7 : 1};">
+        <div class="flex justify-between items-start mb-2">
+          <div class="flex-1">
+            <h4 class="font-bold text-lg mb-1">${escapeHtml(d.food_type || '')}</h4>
+            <div class="flex gap-2 flex-wrap">
+              ${d.status === 'delivered' ? 
+                '<span class="badge badge-delivered">✅ DELIVERED</span>' : 
+                '<span class="badge" style="background: #9E9E9E; color: white;">⏰ EXPIRED</span>'
+              }
+              ${isSelfDelivery ? '<span class="badge" style="background: #4CAF50; color: white;">Self Delivery</span>' : ''}
+              <span class="${d.is_veg ? 'badge badge-veg' : 'badge badge-nonveg'}">${d.is_veg ? '🥬' : '🍗'}</span>
+            </div>
+          </div>
+          <div class="text-right text-xs text-gray-500">
+            <div>${new Date(displayDate).toLocaleDateString()}</div>
+            <div class="text-gray-400">${new Date(displayDate).toLocaleTimeString()}</div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2 text-sm mt-3">
+          <div>
+            <div class="text-gray-500 text-xs">Quantity</div>
+            <div class="font-semibold">📦 ${d.quantity} ${d.unit}</div>
+          </div>
+          ${d.actual_people_served ? `
+            <div>
+              <div class="text-gray-500 text-xs">People Served</div>
+              <div class="font-semibold text-green-600">👥 ${d.actual_people_served}</div>
+            </div>
+          ` : '<div></div>'}
+        </div>
+        
+        <div class="mt-3 space-y-1 text-sm">
+          ${d.donors ? `<div class="text-blue-600">👤 Donor: ${escapeHtml(d.donors.full_name || '')}</div>` : ''}
+          ${d.volunteers && !isSelfDelivery ? `<div class="text-green-600">🚚 Volunteer: ${escapeHtml(d.volunteers.full_name || '')}</div>` : ''}
+          ${d.beneficiaries ? `<div class="text-purple-600">🏠 Beneficiary: ${escapeHtml(beneficiaryName)}</div>` : ''}
+        </div>
+        
+        ${d.special_instructions ? `
+          <div class="mt-2 p-2 bg-gray-50 rounded-lg text-xs text-gray-600">
+            💬 ${escapeHtml(d.special_instructions)}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// CHAT FUNCTIONS
+async function loadUnreadMessages() {
+  if (!currentUser) return;
+  
+  try {
+    const { data } = await supabase
+      .from('messages')
+      .select('sender_id, room_id, is_read')
+      .eq('receiver_id', currentUser.id)
+      .eq('is_read', false);
+
+    if (data) {
+      unreadMessages = {};
+      data.forEach(msg => {
+        if (!unreadMessages[msg.sender_id]) {
+          unreadMessages[msg.sender_id] = 0;
+        }
+        unreadMessages[msg.sender_id]++;
+      });
+    }
+  } catch (error) {
+    console.error('Error loading unread messages:', error);
+  }
+}
+
+function subscribeToAllMessages() {
+  if (!currentUser) return;
+
+  const subscription = supabase
+    .channel('all_messages')
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${currentUser.id}` },
+      (payload) => {
+        const senderId = payload.new.sender_id;
+        if (!unreadMessages[senderId]) {
+          unreadMessages[senderId] = 0;
+        }
+        unreadMessages[senderId]++;
+        updateChatNotifications();
+      }
+    )
+    .subscribe();
+
+  messageSubscriptions.push(subscription);
+}
+
+function updateChatNotifications() {
+  document.querySelectorAll('.btn-chat').forEach(btn => {
+    const userId = btn.getAttribute('data-user-id');
+    const existingBadge = btn.querySelector('.notification-badge');
+    
+    if (userId && unreadMessages[userId] > 0) {
+      if (!existingBadge) {
+        const badge = document.createElement('span');
+        badge.className = 'notification-badge';
+        badge.textContent = unreadMessages[userId];
+        badge.style.position = 'absolute';
+        badge.style.top = '-5px';
+        badge.style.right = '-5px';
+        btn.style.position = 'relative';
+        btn.appendChild(badge);
+      } else {
+        existingBadge.textContent = unreadMessages[userId];
+      }
+    } else if (existingBadge) {
+      existingBadge.remove();
+    }
+  });
+}
+
+async function openChat(userId, userName) {
+  currentChatUser = { id: userId, name: userName };
+  document.getElementById('chat-user-name').textContent = userName;
+  document.getElementById('chat-modal').classList.remove('hide');
+  
+  if (unreadMessages[userId]) {
+    await markMessagesAsRead(userId);
+    unreadMessages[userId] = 0;
+    updateChatNotifications();
+  }
+  
+  await loadChatMessages();
+  subscribeToChatMessages();
+}
+
+async function markMessagesAsRead(senderId) {
+  if (!currentUser || !senderId) return;
+  
+  const roomId = [currentUser.id, senderId].sort().join('_');
+  await supabase
+    .from('messages')
+    .update({ is_read: true })
+    .eq('room_id', roomId)
+    .eq('receiver_id', currentUser.id)
+    .eq('is_read', false);
+}
+
+function closeChatModal() {
+  document.getElementById('chat-modal').classList.add('hide');
+  if (chatSubscription) {
+    try { chatSubscription.unsubscribe(); } catch(e) {}
+    chatSubscription = null;
+  }
+  currentChatUser = null;
+}
+
+async function loadChatMessages() {
+  if (!currentChatUser || !currentUser) return;
+  const roomId = [currentUser.id, currentChatUser.id].sort().join('_');
+
+  const { data } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('room_id', roomId)
+    .order('created_at', { ascending: true })
+    .limit(100);
+
+  const container = document.getElementById('chat-messages');
+  if (!data || data.length === 0) {
+    container.innerHTML = '<div class="text-center text-gray-400 text-sm">No messages yet. Start the conversation!</div>';
+    return;
+  }
+
+  container.innerHTML = data.map(msg => `
+    <div class="chat-message ${msg.sender_id === currentUser.id ? 'sent' : 'received'}">
+      <div>${escapeHtml(msg.content || '')}</div>
+      <div class="chat-time">${msg.created_at ? new Date(msg.created_at).toLocaleTimeString() : ''}</div>
+    </div>
+  `).join('');
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function subscribeToChatMessages() {
+  if (!currentChatUser || !currentUser) return;
+  const roomId = [currentUser.id, currentChatUser.id].sort().join('_');
+
+  if (chatSubscription) {
+    try { chatSubscription.unsubscribe(); } catch(e) {}
+    chatSubscription = null;
+  }
+
+  chatSubscription = supabase
+    .channel(`chat_${roomId}`)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` },
+      () => loadChatMessages()
+    )
+    .subscribe();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const content = input.value.trim();
+
+  if (!content || !currentChatUser || !currentUser) return;
+  const roomId = [currentUser.id, currentChatUser.id].sort().join('_');
+
+  try {
+    await supabase.from('messages').insert({
+      room_id: roomId,
+      sender_id: currentUser.id,
+      receiver_id: currentChatUser.id,
+      content: content,
+      is_read: false,
+      created_at: new Date().toISOString()
+    });
+
+    input.value = '';
+    await loadChatMessages();
+  } catch (error) {
+    alert('Failed to send message');
+    console.error(error);
+  }
+}
+
+// LOCATION PICKER FUNCTIONS
+async function selectPickupMethod(method) {
+  document.querySelectorAll('.pickup-btn').forEach(btn => btn.classList.remove('selected'));
+  document.getElementById(`pickup-btn-${method}`).classList.add('selected');
+
+  const pickupText = document.getElementById('pickup-location-text');
+  const mapContainer = document.getElementById('inline-pickup-map-container');
+
+  // **CRITICAL: Complete cleanup when switching away from map**
+  if (method !== 'map') {
+    mapContainer.classList.add('hide');
+    
+    if (inlinePickupMap) {
+      try { 
+        inlinePickupMap.off();
+        inlinePickupMap.remove();
+      } catch(e) {
+        console.error('Error removing inline pickup map:', e);
+      }
+      inlinePickupMap = null;
+      inlinePickupMarker = null;
+      selectedPickupLocation = null;
+    }
+    
+    // Clear map container HTML
+    const mapElement = document.getElementById('inline-pickup-map');
+    if (mapElement) {
+      mapElement.innerHTML = '';
+    }
+  }
+
+  if (method === 'current') {
+    pickupText.textContent = '📍 Detecting current location...';
+    pickupText.style.color = '#666';
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          
+          if (!isValidCoordinate(lat, lng)) {
+            pickupText.textContent = '❌ Invalid location received';
+            pickupText.style.color = '#C62828';
+            return;
+          }
+          
+          const address = await reverseGeocode(lat, lng);
+          document.getElementById('pickup-lat').value = lat;
+          document.getElementById('pickup-lng').value = lng;
+          pickupText.textContent = `✅ Current Location: ${address}`;
+          pickupText.style.color = '#4CAF50';
+          pickupText.style.fontWeight = '600';
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          let errorMsg = '';
+          let helpText = '';
+          
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMsg = 'Location access denied';
+              helpText = 'Please allow location access in browser settings, then try again.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMsg = 'Location unavailable';
+              helpText = 'GPS signal not available. Try "Saved Location" or "Map Selection".';
+              break;
+            case error.TIMEOUT:
+              errorMsg = 'Location request timed out';
+              helpText = 'GPS is taking too long. Try again or use "Map Selection".';
+              break;
+            default:
+              errorMsg = 'Unknown location error';
+              helpText = 'Use "Saved Location" or select on map.';
+          }
+          
+          pickupText.innerHTML = `
+            <div style="color: #C62828; font-weight: 600;">❌ ${errorMsg}</div>
+            <div style="color: #666; font-size: 12px; margin-top: 4px;">${helpText}</div>
+          `;
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      pickupText.textContent = '❌ Geolocation not supported by your browser';
+      pickupText.style.color = '#C62828';
+    }
+  } else if (method === 'saved') {
+    if (currentUser && currentUser.location_lat && currentUser.location_lng) {
+      const lat = currentUser.location_lat;
+      const lng = currentUser.location_lng;
+      const address = currentUser.address;
+      document.getElementById('pickup-lat').value = lat;
+      document.getElementById('pickup-lng').value = lng;
+      pickupText.textContent = `✅ Saved Location: ${address}`;
+      pickupText.style.color = '#4CAF50';
+      pickupText.style.fontWeight = '600';
+    } else {
+      pickupText.textContent = '❌ No saved address found. Please use current location or map.';
+      pickupText.style.color = '#C62828';
+    }
+  } else if (method === 'map') {
+    mapContainer.classList.remove('hide');
+    pickupText.textContent = '🗺️ Click on the map to select pickup location...';
+    pickupText.style.color = '#666';
+    
+    // Wait for container to be visible before initializing map
+    setTimeout(() => initInlinePickupMap(), 200);
+  }
+}
+
+
+
+// ============================================
+// ENHANCED INLINE PICKUP MAP - REPLACE initInlinePickupMap() function
+// Around line 2080
+// ============================================
+
+function initInlinePickupMap() {
+  const mapElement = document.getElementById('inline-pickup-map');
+  if (!mapElement) {
+    console.error('❌ Inline pickup map element not found');
+    return;
+  }
+
+  // ============================================
+  // CRITICAL: Prevent multiple simultaneous initializations
+  // ============================================
+  if (window.inlineMapInitializing) {
+    console.log('⏳ Map initialization already in progress, skipping...');
+    return;
+  }
+  
+  // Check if map already exists and is valid
+  if (inlinePickupMap) {
+    try {
+      if (inlinePickupMap._container && inlinePickupMap._container.parentNode) {
+        console.log('✅ Inline pickup map already initialized and valid');
+        inlinePickupMap.invalidateSize();
+        return;
+      } else {
+        console.warn('⚠️ Map exists but container invalid, will recreate');
+      }
+    } catch(e) {
+      console.warn('⚠️ Map validation failed, will recreate:', e.message);
+    }
+  }
+  
+  window.inlineMapInitializing = true;
+  console.log('🚀 Initializing inline pickup map...');
+
+  // ============================================
+  // Show loading indicator
+  // ============================================
+  mapElement.innerHTML = `
+    <div class="map-loading-container">
+      <div class="loading-spinner"></div>
+      <div class="map-loading-text">🗺️ Loading location map...</div>
+    </div>
+  `;
+  
+  // ============================================
+  // Complete cleanup of existing map
+  // ============================================
+  if (inlinePickupMap) {
+    console.log('🧹 Cleaning up existing inline pickup map...');
+    try { 
+      inlinePickupMap.off();
+      inlinePickupMap.remove(); 
+    } catch(e) {
+      console.error('❌ Error removing existing map:', e);
+    }
+    inlinePickupMap = null;
+    inlinePickupMarker = null;
+    selectedPickupLocation = null;
+  }
+
+  // ============================================
+  // Initialize map after short delay
+  // ============================================
+  setTimeout(() => {
+    try {
+      // Clear loading indicator
+      mapElement.innerHTML = '';
+      mapElement.style.height = '300px';
+      mapElement.style.width = '100%';
+
+      const centerLat = currentUser?.location_lat || 21.1702;
+      const centerLng = currentUser?.location_lng || 72.8311;
+      
+      console.log('📍 Map center:', centerLat.toFixed(4), centerLng.toFixed(4));
+      
+      // ============================================
+      // Create map instance with mobile optimizations
+      // ============================================
+      inlinePickupMap = L.map('inline-pickup-map', {
+        center: [centerLat, centerLng],
+        zoom: 13,
+        zoomControl: true,
+        attributionControl: true,
+        preferCanvas: true,
+        tap: false, // ✅ Prevents issues on mobile
+        touchZoom: true, // ✅ Enable pinch-to-zoom
+        scrollWheelZoom: false, // ✅ Prevent accidental zoom
+        doubleClickZoom: false // ✅ Prevent double-tap zoom
+      });
+      
+      const statusText = document.getElementById('pickup-location-text');
+      if (statusText) {
+        statusText.innerHTML = `
+          <div style="color: #2196F3; font-weight: 600;">📍 Map Loading...</div>
+          <div style="color: #666; font-size: 12px; margin-top: 4px;">Click anywhere on the map to select pickup location</div>
+        `;
+      }
+      
+      if (!inlinePickupMap) {
+        throw new Error('Failed to create map instance');
+      }
+      
+      console.log('✅ Map instance created');
+      
+      // ============================================
+      // Add tile layer with error handling
+      // ============================================
+      const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+        errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+      });
+      
+      tileLayer.on('tileerror', (error) => {
+        console.warn('⚠️ Tile loading error:', error);
+      });
+      
+      tileLayer.on('load', () => {
+        console.log('✅ Tiles loaded successfully');
+      });
+      
+      tileLayer.addTo(inlinePickupMap);
+      console.log('🗺️ Tile layer added');
+
+      // ============================================
+      // Click handler with debouncing and locking
+      // ============================================
+      let clickTimeout;
+      let isProcessingClick = false;
+      
+      inlinePickupMap.on('click', async function(e) {
+        // Prevent rapid multiple clicks
+        if (isProcessingClick) {
+          console.log('⏳ Already processing click, ignoring...');
+          return;
+        }
+        
+        // Debounce clicks
+        if (clickTimeout) clearTimeout(clickTimeout);
+        
+        clickTimeout = setTimeout(async () => {
+          isProcessingClick = true;
+          
+          const clickedLat = e.latlng.lat;
+          const clickedLng = e.latlng.lng;
+          
+          console.log('🖱️ Map clicked at:', clickedLat.toFixed(6), clickedLng.toFixed(6));
+          
+          // Validate coordinates
+          if (!isValidCoordinate(clickedLat, clickedLng)) {
+            console.error('❌ Invalid coordinates:', clickedLat, clickedLng);
+            isProcessingClick = false;
+            return;
+          }
+          
+          // Remove existing marker
+          if (inlinePickupMarker) {
+            try { 
+              inlinePickupMap.removeLayer(inlinePickupMarker);
+              console.log('🗑️ Removed previous marker'); 
+            } catch(err) {
+              console.error('❌ Error removing marker:', err);
+            }
+          }
+          
+          // Add new marker with custom styling
+          inlinePickupMarker = L.marker([clickedLat, clickedLng], {
+            icon: L.divIcon({
+              className: 'custom-pickup-marker',
+              html: '<div style="background: #FF6B3D; color: white; padding: 8px; border-radius: 50%; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📍</div>',
+              iconSize: [40, 40],
+              iconAnchor: [20, 40]
+            }),
+            draggable: false
+          }).addTo(inlinePickupMap);
+          
+          console.log('📌 Marker added at pickup location');
+          
+          // Store selected location immediately
+          selectedPickupLocation = { 
+            lat: clickedLat, 
+            lng: clickedLng 
+          };
+          
+          // Set form values immediately
+          document.getElementById('pickup-lat').value = clickedLat;
+          document.getElementById('pickup-lng').value = clickedLng;
+          
+          // Update status - show loading
+          const statusText = document.getElementById('pickup-location-text');
+          if (statusText) {
+            statusText.textContent = '🔄 Getting address...';
+            statusText.style.color = '#666';
+          }
+          
+          // Get address asynchronously
+          try {
+            const address = await reverseGeocode(clickedLat, clickedLng);
+            console.log('📍 Address resolved:', address);
+            
+            if (statusText) {
+              statusText.textContent = `📍 Selected: ${address}`;
+              statusText.style.color = '#4CAF50';
+              statusText.style.fontWeight = '600';
+            }
+          } catch (error) {
+            console.error('❌ Reverse geocode error:', error);
+            
+            if (statusText) {
+              statusText.textContent = `📍 Selected: ${clickedLat.toFixed(6)}, ${clickedLng.toFixed(6)}`;
+              statusText.style.color = '#4CAF50';
+              statusText.style.fontWeight = '600';
+            }
+          }
+          
+          console.log('✅ Pickup location selected');
+          
+          // Unlock click processing after delay
+          setTimeout(() => {
+            isProcessingClick = false;
+          }, 500);
+          
+        }, 250); // 250ms debounce
+      });
+
+      // ============================================
+      // Force map to render properly (multi-stage)
+      // ============================================
+      setTimeout(() => {
+        if (inlinePickupMap) {
+          try {
+            inlinePickupMap.invalidateSize();
+            console.log('✅ First invalidateSize() completed');
+            
+            // Second invalidation for reliability
+            setTimeout(() => {
+              if (inlinePickupMap) {
+                inlinePickupMap.invalidateSize();
+                inlinePickupMap.setView([centerLat, centerLng], 13);
+                window.inlineMapInitializing = false;
+                console.log('✅ Inline pickup map fully initialized');
+              }
+            }, 200);
+          } catch(e) {
+            console.error('❌ Error in invalidateSize():', e);
+            window.inlineMapInitializing = false;
+          }
+        } else {
+          console.error('❌ Map instance lost during initialization');
+          window.inlineMapInitializing = false;
+        }
+      }, 300);
+
+    } catch(error) {
+      console.error('❌ Fatal error initializing inline pickup map:', error);
+      window.inlineMapInitializing = false;
+      
+      // Show error message to user
+      const statusText = document.getElementById('pickup-location-text');
+      if (statusText) {
+        statusText.innerHTML = `
+          <div style="color: #C62828; font-weight: 600;">❌ Map Error</div>
+          <div style="color: #666; font-size: 12px; margin-top: 4px;">
+            Unable to load map. Please use "Current Location" or "Saved Location" instead.
+          </div>
+        `;
+      }
+      
+      // Hide map container
+      const container = document.getElementById('inline-pickup-map-container');
+      if (container) {
+        container.classList.add('hide');
+      }
+    }
+  }, 100);
+}
+async function confirmInlinePickupLocation() {
+  if (!selectedPickupLocation) {
+    alert('Please click on the map to select a location first');
+    return;
+  }
+  
+  const { lat, lng } = selectedPickupLocation;
+  const address = await reverseGeocode(lat, lng);
+  
+  document.getElementById('pickup-lat').value = lat;
+  document.getElementById('pickup-lng').value = lng;
+  
+  const pickupText = document.getElementById('pickup-location-text');
+  if (pickupText) {
+    pickupText.textContent = `📍 Pickup: ${address}`;
+    pickupText.style.color = '#4CAF50';
+    pickupText.style.fontWeight = '600';
+  }
+  
+  // Hide map container after selection
+  const mapContainer = document.getElementById('inline-pickup-map-container');
+  if (mapContainer) {
+    mapContainer.classList.add('hide');
+  }
+  
+  // Clean up map
+  if (inlinePickupMap) {
+    try { 
+      inlinePickupMap.off();
+      inlinePickupMap.remove();
+      inlinePickupMap = null;
+      inlinePickupMarker = null;
+    } catch(e) {
+      console.error('Error removing map:', e);
+    }
+  }
+  
+  // ✅ CRITICAL: Reset initialization flag
+  window.inlineMapInitializing = false;
+  
+  console.log('✅ Inline pickup location confirmed');
+}
+
+function showLocationPicker(type = 'registration') {
+  locationModalType = type;
+  document.getElementById('location-modal').classList.remove('hide');
+  setTimeout(() => initLocationMap(), 200);
+}
+
+function closeLocationPicker() {
+  console.log('🚪 Closing location picker modal...');
+  
+  document.getElementById('location-modal').classList.add('hide');
+  
+  // ============================================
+  // Complete cleanup of location map
+  // ============================================
+  if (locationMap) {
+    try {
+      console.log('🗺️ Cleaning up location map...');
+      
+      // Step 1: Remove all event listeners
+      locationMap.off();
+      
+      // Step 2: Remove all markers
+      if (locationMarker) {
+        try {
+          locationMap.removeLayer(locationMarker);
+        } catch(e) {
+          console.warn('Marker already removed');
+        }
+      }
+      
+      // Step 3: Destroy map instance
+      locationMap.remove();
+      
+      // Step 4: Clear references
+      locationMap = null;
+      locationMarker = null;
+      selectedLocation = null;
+      
+      console.log('✅ Location map cleaned up successfully');
+    } catch(e) {
+      console.error('❌ Error cleaning up location map:', e);
+      // Force cleanup even if error occurs
+      locationMap = null;
+      locationMarker = null;
+      selectedLocation = null;
+    }
+  }
+  
+  // ============================================
+  // Clear map container HTML to prevent ghost elements
+  // ============================================
+  const mapElement = document.getElementById('location-map');
+  if (mapElement) {
+    mapElement.innerHTML = '';
+    mapElement.style.height = '300px'; // Reset height
+  }
+  
+  // ============================================
+  // Reset UI elements
+  // ============================================
+  const confirmBtn = document.getElementById('confirm-location-btn');
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+  }
+  
+  const statusEl = document.getElementById('location-status');
+  if (statusEl) {
+    statusEl.textContent = '';
+    statusEl.style.color = '';
+    statusEl.style.fontWeight = '';
+  }
+  
+  console.log('✅ Location picker modal fully closed and cleaned');
+}
+// ============================================
+// SECTION 6: ENHANCED LOCATION MAP
+// Replace lines ~2500-2620
+// ============================================
+
+function initLocationMap() {
+  const mapElement = document.getElementById('location-map');
+  if (!mapElement) {
+    console.error('❌ Location map element not found');
+    return;
+  }
+
+  // Show loading indicator
+  mapElement.innerHTML = `
+    <div class="map-loading-container">
+      <div class="loading-spinner"></div>
+      <div class="map-loading-text">🗺️ Loading location map...</div>
+    </div>
+  `;
+  
+  // Remove existing map if any
+  if (locationMap) {
+    try { 
+      locationMap.off();
+      locationMap.remove(); 
+    } catch(e) {
+      console.error('Error removing existing location map:', e);
+    }
+    locationMap = null;
+    locationMarker = null;
+  }
+
+  // Wait for DOM to be ready
+  setTimeout(() => {
+    try {
+      // Clear the map container
+      mapElement.innerHTML = '';
+      mapElement.style.height = '300px';
+
+      const centerLat = currentUser?.location_lat || 21.1702;
+      const centerLng = currentUser?.location_lng || 72.8311;
+      
+      // Create map with proper configuration
+      locationMap = L.map('location-map', {
+        center: [centerLat, centerLng],
+        zoom: 13,
+        zoomControl: true,
+        attributionControl: true,
+        preferCanvas: true,
+        tap: false
+      });
+      
+      if (!locationMap) {
+        throw new Error('Failed to create map instance');
+      }
+      
+      // Add tile layer with error handling
+      const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+        errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+      });
+      
+      tileLayer.on('tileerror', (error) => {
+        console.warn('⚠️ Tile loading error:', error);
+      });
+      
+      tileLayer.addTo(locationMap);
+
+      // Add click handler with debouncing
+      let clickTimeout;
+      let isProcessingClick = false;
+      
+      locationMap.on('click', async function(e) {
+        // Prevent multiple rapid clicks
+        if (isProcessingClick) {
+          console.log('⏳ Already processing click, ignoring...');
+          return;
+        }
+        
+        if (clickTimeout) clearTimeout(clickTimeout);
+        
+        clickTimeout = setTimeout(async () => {
+          isProcessingClick = true;
+          
+          const clickedLat = e.latlng.lat;
+          const clickedLng = e.latlng.lng;
+          
+          console.log('🖱️ Map clicked at:', clickedLat.toFixed(6), clickedLng.toFixed(6));
+          
+          // Validate coordinates
+          if (!isValidCoordinate(clickedLat, clickedLng)) {
+            console.error('Invalid coordinates clicked');
+            isProcessingClick = false;
+            return;
+          }
+          
+          // Remove existing marker
+          if (locationMarker) {
+            try { 
+              locationMap.removeLayer(locationMarker); 
+            } catch(err) {
+              console.error('Error removing marker:', err);
+            }
+          }
+          
+          // Add new marker
+          locationMarker = L.marker([clickedLat, clickedLng], {
+            icon: L.divIcon({
+              className: 'custom-location-marker',
+              html: '<div style="background: #2196F3; color: white; padding: 8px; border-radius: 50%; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📍</div>',
+              iconSize: [40, 40],
+              iconAnchor: [20, 40]
+            }),
+            draggable: false
+          }).addTo(locationMap);
+          
+          // Show loading state
+          const statusEl = document.getElementById('location-status');
+          if (statusEl) {
+            statusEl.textContent = '🔄 Getting address...';
+            statusEl.style.color = '#666';
+          }
+          
+          // Get address
+          try {
+            const address = await reverseGeocode(clickedLat, clickedLng);
+            
+            selectedLocation = { 
+              lat: clickedLat, 
+              lng: clickedLng, 
+              address: address 
+            };
+            
+            const confirmBtn = document.getElementById('confirm-location-btn');
+            if (confirmBtn) confirmBtn.disabled = false;
+            
+            if (statusEl) {
+              statusEl.textContent = `✅ Selected: ${address}`;
+              statusEl.style.color = '#4CAF50';
+              statusEl.style.fontWeight = '600';
+            }
+          } catch (error) {
+            console.error('Reverse geocode error:', error);
+            
+            selectedLocation = { 
+              lat: clickedLat, 
+              lng: clickedLng, 
+              address: `${clickedLat.toFixed(6)}, ${clickedLng.toFixed(6)}`
+            };
+            
+            const confirmBtn = document.getElementById('confirm-location-btn');
+            if (confirmBtn) confirmBtn.disabled = false;
+            
+            if (statusEl) {
+              statusEl.textContent = `✅ Selected: ${clickedLat.toFixed(6)}, ${clickedLng.toFixed(6)}`;
+              statusEl.style.color = '#4CAF50';
+              statusEl.style.fontWeight = '600';
+            }
+          }
+          
+          // Unlock click processing
+          setTimeout(() => {
+            isProcessingClick = false;
+          }, 500);
+          
+        }, 250); // 250ms debounce
+      });
+
+      // Force map to render properly
+      setTimeout(() => {
+        if (locationMap) {
+          try {
+            locationMap.invalidateSize();
+            
+            // Second invalidation for reliability
+            setTimeout(() => {
+              if (locationMap) {
+                locationMap.invalidateSize();
+                locationMap.setView([centerLat, centerLng], 13);
+                console.log('✅ Location map fully initialized');
+              }
+            }, 200);
+          } catch(e) {
+            console.error('❌ Error in invalidateSize():', e);
+          }
+        }
+      }, 300);
+
+    } catch(error) {
+      console.error('❌ Fatal error initializing location map:', error);
+      
+      const statusEl = document.getElementById('location-status');
+      if (statusEl) {
+        statusEl.innerHTML = `
+          <div style="color: #C62828; font-weight: 600;">❌ Map Error</div>
+          <div style="color: #666; font-size: 12px; margin-top: 4px;">
+            Unable to load map. Please use "Current Location" button instead.
+          </div>
+        `;
+      }
+    }
+  }, 100);
+}
+async function useCurrentLocation() {
+  const statusEl = document.getElementById('location-status');
+  statusEl.textContent = '📍 Detecting current location...';
+
+  if (!navigator.geolocation) {
+    statusEl.textContent = '❌ Geolocation not supported by your browser.';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const address = await reverseGeocode(lat, lng);
+
+      // Remove existing marker
+      if (locationMarker && locationMap) {
+        try {
+          locationMap.removeLayer(locationMarker);
+        } catch(e) {
+          console.error('Error removing marker:', e);
+        }
+      }
+
+      // Add new marker and center map
+      if (locationMap) {
+        locationMarker = L.marker([lat, lng]).addTo(locationMap);
+        locationMap.setView([lat, lng], 15);
+      }
+
+      // Store selected location
+      selectedLocation = { lat, lng, address };
+      statusEl.textContent = `✅ Selected: ${address}`;
+      document.getElementById('confirm-location-btn').disabled = false;
+    },
+    (error) => {
+      console.error('Geolocation error:', error);
+      let errorMsg = 'Unable to fetch current location. ';
+      
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          errorMsg += 'Please allow location access in your browser.';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMsg += 'Location information is unavailable.';
+          break;
+        case error.TIMEOUT:
+          errorMsg += 'Location request timed out.';
+          break;
+        default:
+          errorMsg += 'An unknown error occurred.';
+      }
+      
+      statusEl.textContent = `❌ ${errorMsg}`;
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    }
+  );
+}
+function confirmLocation() {
+  if (!selectedLocation) {
+    alert('Please select a location first by clicking on the map or using "Use Current Location".');
+    return;
+  }
+
+  const { lat, lng, address } = selectedLocation;
+  
+  if (locationModalType === 'registration') {
+    document.getElementById('reg-lat').value = lat;
+    document.getElementById('reg-lng').value = lng;
+    document.getElementById('reg-address').value = address;
+    
+    // ✅ FIX: Properly update the location button text with address AND styling
+    const locationTextBtn = document.getElementById('location-text');
+    if (locationTextBtn) {
+      locationTextBtn.textContent = `📍 ${address}`;
+      locationTextBtn.style.color = '#4CAF50';
+      locationTextBtn.style.fontWeight = '600';
+      
+      // ✅ NEW: Also update the parent button styling
+      const locationBtn = locationTextBtn.closest('button');
+      if (locationBtn) {
+        locationBtn.style.borderColor = '#4CAF50';
+        locationBtn.style.backgroundColor = '#E8F5E9';
+        
+        // ✅ CRITICAL: Store original styles for potential reset
+        if (!locationBtn.dataset.originalBorder) {
+          locationBtn.dataset.originalBorder = '#E5E7EB'; // border-gray-200
+          locationBtn.dataset.originalBg = '#FFFFFF'; // white
+        }
+      }
+    }
+    
+    console.log('✅ Location confirmed for registration:', address);
+  }
+  
+  closeLocationPicker();
+}
+
+function selectBeneficiary(id) {
+  chosenBeneficiaryId = id;
+  document.querySelectorAll('#beneficiary-list-modal .location-option').forEach(el => {
+    el.classList.remove('selected');
+  });
+  const el = document.getElementById('beneficiary-option-' + id);
+  if (el) {
+    el.classList.add('selected');
+  }
+  document.getElementById('confirm-beneficiary-btn').disabled = false;
+}
+
+function closeBeneficiaryModal() {
+  document.getElementById('beneficiary-modal').classList.add('hide');
+  currentAcceptingDonationId = null;
+  chosenBeneficiaryId = null;
+}
+
+function completeDelivery(donationId) {
+  document.getElementById('delivery-modal').classList.remove('hide');
+  window.currentDeliveryId = donationId;
+}
+
+function closeDeliveryModal() {
+  document.getElementById('delivery-modal').classList.add('hide');
+  window.currentDeliveryId = null;
+  document.getElementById('people-served').value = '';
+}
+
+
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js");
+  }
+
+</script>
+</body>
+</html>
