@@ -1,18 +1,18 @@
 {
   "name": "Seva - Food Donation Platform",
   "short_name": "Seva",
-  "id": "/",
-  "description": "Connect donors, volunteers, and beneficiaries for food donations. Share surplus food, volunteer for deliveries, or receive help from your community.",
-  "start_url": "/",
+  "id": "/?source=pwa",
+  "description": "Connect donors, volunteers, and beneficiaries for food donations. Share surplus food, volunteer for deliveries, or receive help from your community with real-time GPS tracking.",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#1E3A5F",
   "theme_color": "#FF6B3D",
   "orientation": "portrait-primary",
-  "lang": "en",
+  "lang": "en-US",
   "dir": "ltr",
-  "categories": ["food", "lifestyle", "social", "utilities"],
+  "categories": ["food", "lifestyle", "social", "utilities", "productivity"],
   "prefer_related_applications": false,
   "icons": [
     {
@@ -82,47 +82,47 @@
       "sizes": "540x960",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Home screen showing active donations"
+      "label": "Home screen showing active donations and rewards"
     },
     {
       "src": "/screenshots/mobile-nearby-540x960.png",
       "sizes": "540x960",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Browse nearby donations with GPS tracking"
+      "label": "Browse nearby donations with real-time GPS tracking"
     },
     {
       "src": "/screenshots/mobile-tracking-540x960.png",
       "sizes": "540x960",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Track deliveries in real-time"
+      "label": "Track deliveries in real-time on interactive maps"
     },
     {
       "src": "/screenshots/desktop-dashboard-1280x720.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Desktop dashboard view"
+      "label": "Desktop dashboard with statistics and management"
     },
     {
       "src": "/screenshots/desktop-map-1280x720.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Interactive map showing nearby donations"
+      "label": "Interactive map showing nearby donations and volunteers"
     }
   ],
   "shortcuts": [
     {
       "name": "Create Donation",
       "short_name": "Donate",
-      "description": "Post a new food donation",
-      "url": "/?action=create",
+      "description": "Post a new food donation quickly",
+      "url": "/?action=create&source=shortcut",
       "icons": [
         {
-          "src": "/icons/icon-192x192.png",
-          "sizes": "192x192",
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96",
           "type": "image/png"
         }
       ]
@@ -130,12 +130,12 @@
     {
       "name": "View Nearby",
       "short_name": "Nearby",
-      "description": "Browse nearby donations",
-      "url": "/?tab=nearby",
+      "description": "Browse donations near you",
+      "url": "/?tab=nearby&source=shortcut",
       "icons": [
         {
-          "src": "/icons/icon-192x192.png",
-          "sizes": "192x192",
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96",
           "type": "image/png"
         }
       ]
@@ -143,15 +143,43 @@
     {
       "name": "Track Deliveries",
       "short_name": "Track",
-      "description": "Track active deliveries",
-      "url": "/?tab=tracking",
+      "description": "Track your active deliveries",
+      "url": "/?tab=tracking&source=shortcut",
       "icons": [
         {
-          "src": "/icons/icon-192x192.png",
-          "sizes": "192x192",
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96",
           "type": "image/png"
         }
       ]
+    },
+    {
+      "name": "History",
+      "short_name": "History",
+      "description": "View donation history",
+      "url": "/?tab=history&source=shortcut",
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+seva",
+      "url": "/?action=%s"
     }
   ]
 }
