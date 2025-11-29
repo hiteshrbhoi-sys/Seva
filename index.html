@@ -11,8 +11,9 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="shortcut icon" href="/favicon.ico" />
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-<link rel="manifest" href="/manifest.json" />
-<link rel="manifest" href="/site.webmanifest" />
+<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="/site.webmanifest">
+
 
 <!-- ✅ IOS SPECIFIC META TAGS -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -813,16 +814,161 @@ let lastExpiryUpdateTime = 0;
 const EXPIRY_UPDATE_THROTTLE = 1000; // 1 second
 
 // Initialize live location tracking
-// Initialize live location tracking with improved error handling
 // ============================================
-// SECTION 1: ENHANCED GPS LOCATION TRACKING
-// Replace lines ~1150-1280
+// 🗺️ ENHANCED MAP MANAGEMENT SYSTEM
 // ============================================
 
+// Global map registry to track all active maps
+const activeMapRegistry = new Map();
+
+/**
+ * Safe map cleanup with complete DOM reset
+ * @param {L.Map} map - Leaflet map instance
+ * @param {string} mapId - DOM element ID
+ * @param {string} registryKey - Unique key for tracking
+ */
+function safeMapCleanup(map, mapId, registryKey) {
+  if (!map) return Promise.resolve(true);
+  
+  return new Promise((resolve) => {
+    try {
+      console.log(`🧹 Cleaning up map: ${registryKey}`);
+      
+      // Step 1: Stop all animations
+      if (map.stop) map.stop();
+      
+      // Step 2: Remove all event listeners
+      map.off();
+      
+      // Step 3: Clear all layers with error handling
+      const layersToRemove = [];
+      map.eachLayer((layer) => {
+        layersToRemove.push(layer);
+      });
+      
+      layersToRemove.forEach(layer => {
+        try {
+          map.removeLayer(layer);
+        } catch(e) {
+          console.warn('Layer removal warning:', e);
+        }
+      });
+      
+      // Step 4: Remove map instance
+      map.remove();
+      
+      // Step 5: Clear DOM container completely
+      const container = document.getElementById(mapId);
+      if (container) {
+        // Remove all Leaflet classes
+        container.className = container.className.split(' ').filter(c => !c.startsWith('leaflet-')).join(' ');
+        container.innerHTML = '';
+        
+        // Clear Leaflet internal properties
+        if (container._leaflet_id) {
+          delete container._leaflet_id;
+        }
+        delete container._leaflet;
+        delete container._leaflet_map;
+      }
+      
+      // Step 6: Remove from registry
+      activeMapRegistry.delete(registryKey);
+      
+      console.log(`✅ Map cleaned: ${registryKey}`);
+      resolve(true);
+      
+    } catch(error) {
+      console.error(`❌ Map cleanup error for ${registryKey}:`, error);
+      
+      // Force cleanup
+      const container = document.getElementById(mapId);
+      if (container) {
+        container.innerHTML = '';
+        delete container._leaflet_id;
+        delete container._leaflet;
+      }
+      activeMapRegistry.delete(registryKey);
+      
+      resolve(false);
+    }
+  });
+}
+
+/**
+ * Initialize map with automatic cleanup management
+ * @param {string} elementId - DOM element ID
+ * @param {string} registryKey - Unique tracking key
+ * @param {Object} options - Leaflet map options
+ * @returns {L.Map|null} Map instance or null on failure
+ */
+function safeMapInit(elementId, registryKey, options = {}) {
+  // Check if map already exists
+  if (activeMapRegistry.has(registryKey)) {
+    const existing = activeMapRegistry.get(registryKey);
+    if (existing && existing._container && existing._container.parentNode) {
+      console.log(`♻️ Reusing existing map: ${registryKey}`);
+      existing.invalidateSize();
+      return existing;
+    } else {
+      console.warn(`⚠️ Stale map found, cleaning: ${registryKey}`);
+      safeMapCleanup(existing, elementId, registryKey);
+    }
+  }
+  
+  try {
+    const container = document.getElementById(elementId);
+    if (!container) {
+      console.error(`❌ Map container not found: ${elementId}`);
+      return null;
+    }
+    
+    // Clear any existing Leaflet data
+    container.innerHTML = '';
+    if (container._leaflet_id) {
+      delete container._leaflet_id;
+    }
+    
+    // Create new map
+    const map = L.map(elementId, {
+      zoomControl: true,
+      attributionControl: true,
+      preferCanvas: true,
+      tap: false,
+      ...options
+    });
+    
+    // Register map
+    activeMapRegistry.set(registryKey, map);
+    
+    console.log(`✅ Map initialized: ${registryKey}`);
+    return map;
+    
+  } catch(error) {
+    console.error(`❌ Map initialization failed for ${registryKey}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Cleanup all maps in registry
+ */
+async function cleanupAllMaps() {
+  console.log(`🧹 Cleaning up ${activeMapRegistry.size} active maps`);
+  
+  const cleanupPromises = [];
+  activeMapRegistry.forEach((map, key) => {
+    const elementId = map._container?.id || key.split('-')[0];
+    cleanupPromises.push(safeMapCleanup(map, elementId, key));
+  });
+  
+  await Promise.allSettled(cleanupPromises);
+  activeMapRegistry.clear();
+  console.log('✅ All maps cleaned');
+}
 // ============================================
 // ENHANCED GPS LOCATION TRACKING WITH BETTER ERROR HANDLING
 // ============================================
-
 
 
 function startLiveLocationTracking() {
@@ -849,12 +995,19 @@ function startLiveLocationTracking() {
   let retryCount = 0;
   const maxRetries = 3;
   let lastValidLocation = null;
+  let consecutiveErrors = 0;
+  const maxConsecutiveErrors = 5;
 
   console.log('📡 Starting real-time location tracking...');
+
+  // 🔋 Battery optimization: Adaptive accuracy
+  let useHighAccuracy = true;
+  let lastUpdateTime = Date.now();
 
   locationWatchId = navigator.geolocation.watchPosition(
     (position) => {
       retryCount = 0;
+      consecutiveErrors = 0;
       const newLat = position.coords.latitude;
       const newLng = position.coords.longitude;
       
@@ -867,8 +1020,11 @@ function startLiveLocationTracking() {
         ? calculateDistance(currentLiveLocation.lat, currentLiveLocation.lng, newLat, newLng)
         : Infinity;
 
-      // ✅ IMPROVED: Only update if moved more than 50m OR first location
-      if (distanceMoved > 0.05 || !currentLiveLocation) {
+      // ✅ IMPROVED: Only update if moved more than 50m OR first location OR 30 seconds passed
+      const timeSinceLastUpdate = Date.now() - lastUpdateTime;
+      const shouldUpdate = distanceMoved > 0.05 || !currentLiveLocation || timeSinceLastUpdate > 30000;
+      
+      if (shouldUpdate) {
         currentLiveLocation = {
           lat: newLat,
           lng: newLng,
@@ -878,8 +1034,19 @@ function startLiveLocationTracking() {
         };
         
         lastValidLocation = { ...currentLiveLocation };
+        lastUpdateTime = Date.now();
 
         console.log(`📍 Location updated: ${newLat.toFixed(6)}, ${newLng.toFixed(6)} (±${Math.round(position.coords.accuracy)}m)`);
+
+        // 🔋 Battery optimization: Switch to low accuracy if stationary
+        if (distanceMoved < 0.01 && useHighAccuracy && timeSinceLastUpdate > 60000) {
+          useHighAccuracy = false;
+          console.log('🔋 Switching to low accuracy mode (stationary)');
+          // Restart with new settings
+          stopLiveLocationTracking();
+          setTimeout(() => startLiveLocationTracking(), 1000);
+          return;
+        }
 
         // ✅ IMPROVED: Throttle nearby content refresh
         if (currentTab === 'nearby' && !window.locationUpdateThrottle) {
@@ -889,12 +1056,23 @@ function startLiveLocationTracking() {
             if (currentTab === 'nearby') {
               loadNearbyContent();
             }
-          }, 5000); // Refresh max once per 5 seconds
+          }, 5000);
         }
       }
     },
     (error) => {
-      console.error('Location tracking error:', error);
+      consecutiveErrors++;
+      console.error(`Location tracking error (${consecutiveErrors}/${maxConsecutiveErrors}):`, error);
+      
+      // Stop tracking after too many consecutive errors
+      if (consecutiveErrors >= maxConsecutiveErrors) {
+        console.error('❌ Too many consecutive GPS errors, stopping tracking');
+        isLocationTracking = false;
+        stopLiveLocationTracking();
+        useFallbackLocation();
+        showNotification('GPS Error', 'Too many location errors. Using saved location.', 'error');
+        return;
+      }
       
       switch(error.code) {
         case error.PERMISSION_DENIED:
@@ -933,14 +1111,15 @@ function startLiveLocationTracking() {
       }
     },
     {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 5000
+      enableHighAccuracy: useHighAccuracy,
+      timeout: useHighAccuracy ? 15000 : 30000,
+      maximumAge: useHighAccuracy ? 5000 : 30000
     }
   );
 
   console.log('✅ Location tracking started with watch ID:', locationWatchId);
 }
+
 function stopLiveLocationTracking() {
   if (locationWatchId !== null) {
     navigator.geolocation.clearWatch(locationWatchId);
@@ -1736,48 +1915,110 @@ async function sendPushNotificationToUser(userId, notificationData) {
   }
 }
 
-// Initialize notifications on app load
+// ============================================
+// ENHANCED NOTIFICATION INITIALIZATION
+// ============================================
+
 async function initializeNotifications() {
   console.log('🔔 Initializing notification system...');
   
-  // Register service worker
+  // Register service worker first
   await registerServiceWorker();
   
-  // Request permission
-  await requestNotificationPermission();
+  // Request notification permission
+  if (Notification.permission === 'default') {
+    // Show info banner first
+    showInAppNotification(
+      '🔔 Enable Notifications?',
+      'Get real-time updates for new donations, messages, and deliveries',
+      'info'
+    );
+    
+    // Request after 3 seconds
+    setTimeout(async () => {
+      await requestNotificationPermission();
+    }, 3000);
+  } else if (Notification.permission === 'granted') {
+    console.log('✅ Notifications already enabled');
+  }
   
   console.log('✅ Notification system initialized');
 }
+// ============================================
+// ENHANCED PWA INSTALL PROMPT
+// ============================================
 
-// Add install prompt for PWA
+// Enhanced PWA install prompt
 let deferredPrompt;
+let installPromptShown = false;
 
 window.addEventListener('beforeinstallprompt', (e) => {
   console.log('💾 PWA install prompt available');
   e.preventDefault();
   deferredPrompt = e;
   
-  // Show custom install button/banner
-  showInstallPromotion();
+  // Show install prompt after user has used app for 30 seconds
+  if (!installPromptShown) {
+    setTimeout(() => {
+      showInstallPrompt();
+    }, 30000);
+  }
 });
 
-function showInstallPromotion() {
-  // You can show a custom "Install App" button here
-  console.log('📱 App can be installed');
+function showInstallPrompt() {
+  if (!deferredPrompt || installPromptShown) return;
   
-  // Example: Show banner at top of app
-  if (currentUser) {
-    showInAppNotification(
-      '📱 Install Seva App',
-      'Install Seva for faster access and push notifications!',
-      'info'
-    );
-  }
+  installPromptShown = true;
+  
+  const installBanner = document.createElement('div');
+  installBanner.id = 'install-banner';
+  installBanner.style.cssText = `
+    position: fixed;
+    bottom: 80px;
+    left: 16px;
+    right: 16px;
+    background: linear-gradient(135deg, #FF6B3D 0%, #FF8E53 100%);
+    color: white;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(255, 107, 61, 0.4);
+    z-index: 9998;
+    animation: slideUp 0.3s ease-out;
+  `;
+  
+  installBanner.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="font-size: 32px;">📱</div>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; margin-bottom: 4px;">Install Seva App</div>
+        <div style="font-size: 13px; opacity: 0.9;">
+          Get instant access and push notifications
+        </div>
+      </div>
+      <button onclick="installPWA()" style="background: white; color: #FF6B3D; padding: 8px 16px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; white-space: nowrap;">
+        Install
+      </button>
+      <button onclick="dismissInstallPrompt()" style="background: rgba(255,255,255,0.2); color: white; padding: 8px; border-radius: 12px; border: none; cursor: pointer; font-size: 18px;">
+        ✕
+      </button>
+    </div>
+  `;
+  
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  document.body.appendChild(installBanner);
 }
 
-async function installApp() {
+window.installPWA = async function() {
   if (!deferredPrompt) {
-    console.log('⚠️ Install prompt not available');
+    console.log('❌ Install prompt not available');
     return;
   }
 
@@ -1786,49 +2027,97 @@ async function installApp() {
   
   if (outcome === 'accepted') {
     console.log('✅ User accepted PWA installation');
-    showInAppNotification('🎉 App Installed!', 'Open Seva from your home screen', 'success');
+    showInAppNotification(
+      '🎉 Installing...',
+      'Seva is being added to your home screen',
+      'success'
+    );
   } else {
     console.log('❌ User dismissed PWA installation');
   }
   
   deferredPrompt = null;
-}
+  dismissInstallPrompt();
+};
+
+window.dismissInstallPrompt = function() {
+  const banner = document.getElementById('install-banner');
+  if (banner) {
+    banner.style.animation = 'slideUp 0.3s ease-out reverse';
+    setTimeout(() => banner.remove(), 300);
+  }
+};
 
 window.addEventListener('appinstalled', () => {
   console.log('✅ PWA was installed');
-  showInAppNotification('🎉 Welcome!', 'Seva has been installed successfully', 'success');
+  showInAppNotification(
+    '🎉 Welcome!',
+    'Seva has been installed successfully. Open it from your home screen anytime!',
+    'success'
+  );
+  
+  // Log installation
+  if (currentUser) {
+    console.log('📊 User installed PWA:', currentUser.id);
+  }
 });
+
+console.log('✅ All PWA enhancements loaded');
 // ============================================
-// ✨ NETWORK STATUS MONITORING
+// ENHANCED OFFLINE DETECTION
 // ============================================
 
-// Monitor online/offline status
+// Enhanced offline detection
+let wasOffline = false;
+
 window.addEventListener('online', () => {
-  console.log('📶 Network connection restored');
-  showNotification('Back Online', 'Network connection restored. Syncing data...', 'success');
+  console.log('🔶 Network connection restored');
   
-  // Restart GPS tracking if we're on nearby tab
-  if (currentTab === 'nearby' && currentUser && !isLocationTracking) {
-    startLiveLocationTracking();
-  }
-  
-  // Reload current content to sync latest data
-  if (currentUser) {
-    if (currentTab === 'home') {
-      loadHomeContent();
-    } else if (currentTab === 'nearby') {
-      loadNearbyContent();
-    } else if (currentTab === 'tracking') {
-      loadTrackingContent();
+  if (wasOffline) {
+    showNotification(
+      'Back Online',
+      'Network connection restored. Syncing data...',
+      'success'
+    );
+    
+    // Trigger background sync if available
+    if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.sync.register('sync-donations').catch(err => {
+          console.error('Background sync failed:', err);
+        });
+      });
+    }
+    
+    // Restart GPS tracking if on nearby tab
+    if (currentTab === 'nearby' && currentUser && !isLocationTracking) {
+      startLiveLocationTracking();
+    }
+    
+    // Reload current content
+    if (currentUser) {
+      setTimeout(() => {
+        if (currentTab === 'home') loadHomeContent();
+        else if (currentTab === 'nearby') loadNearbyContent();
+        else if (currentTab === 'tracking') loadTrackingContent();
+      }, 1000);
     }
   }
+  
+  wasOffline = false;
 });
 
 window.addEventListener('offline', () => {
-  console.log('📵 Network connection lost');
-  showNotification('Offline Mode', 'Network connection lost. Some features may be limited.', 'warning');
+  console.log('🔵 Network connection lost');
+  wasOffline = true;
   
-  // Stop GPS tracking to save battery when offline
+  showNotification(
+    'Offline Mode',
+    'Network connection lost. Some features may be limited.',
+    'warning'
+  );
+  
+  // Stop GPS tracking to save battery
   stopLiveLocationTracking();
   
   // Clear refresh intervals
@@ -1888,21 +2177,45 @@ function attachWindowUnloadHandler() {
   windowBeforeUnloadAttached = true;
 }
 // ============================================
-// WINDOW ONLOAD - APP INITIALIZATION
+// ENHANCED WINDOW.ONLOAD WITH PWA SUPPORT
 // ============================================
 
 window.onload = async () => {
-  await initializeNotifications();
-  setupPhoneValidation();
-  attachWindowUnloadHandler(); // Add cleanup handler
+  console.log('🚀 Seva App Loading...');
   
-  // Check initial network status
+  // Initialize notifications and service worker
+  await initializeNotifications();
+  
+  // Setup phone validation
+  setupPhoneValidation();
+  
+  // Attach cleanup handlers
+  attachWindowUnloadHandler();
+  
+  // Register cleanup on page unload
+  window.addEventListener('unload', () => {
+    cleanupAllMaps();
+  });
+  
+  // Check network status
   if (!navigator.onLine) {
-    console.log('🔵 Starting in offline mode');
+    console.log('📵 Starting in offline mode');
     setTimeout(() => {
-      showNotification('Offline Mode', 'You are currently offline. Connect to the internet for full functionality.', 'warning');
+      showNotification(
+        'Offline Mode',
+        'You are currently offline. Some features may be limited.',
+        'warning'
+      );
     }, 2000);
   }
+  
+  // Handle URL parameters (PWA deep links)
+  const urlParams = new URLSearchParams(window.location.search);
+  const action = urlParams.get('action');
+  const tab = urlParams.get('tab');
+  const source = urlParams.get('source');
+  
+  console.log('📍 URL params:', { action, tab, source });
   
   // Load saved user session
   const savedUserId = window.localStorage.getItem('seva_user_id');
@@ -1910,15 +2223,31 @@ window.onload = async () => {
     try {
       await loadUserData(savedUserId);
       showMainApp();
-      subscribeToNotifications();
+      await subscribeToNotifications();
+      
+      // Handle deep link navigation
+      if (tab && ['home', 'nearby', 'tracking', 'history'].includes(tab)) {
+        setTimeout(() => showTab(tab), 500);
+      }
+      
+      if (action === 'create' && currentUser) {
+        setTimeout(() => showCreateDonation(), 1000);
+      }
+      
+      // Log installation source
+      if (source) {
+        console.log('📱 Opened from:', source);
+      }
+      
     } catch (error) {
       console.error('Failed to load saved user:', error);
       window.localStorage.removeItem('seva_user_id');
       showNotification('Session Expired', 'Please login again', 'error');
     }
   }
+  
+  console.log('✅ Seva App Ready');
 };
-
     function setupPhoneValidation() {
       document.querySelectorAll('input[type="tel"]').forEach(input => {
         input.addEventListener('input', (e) => {
@@ -2208,10 +2537,10 @@ window.onload = async () => {
 async function logout() {
   if (!confirm('Are you sure you want to logout?')) return;
   
-  console.log('🔒 Starting logout process...');
+  console.log('🔓 Starting logout process...');
   
   try {
-    // 1. Stop location tracking FIRST
+    // 1. Stop location tracking
     stopLiveLocationTracking();
     window.fallbackNotificationShown = false;
     
@@ -2221,13 +2550,23 @@ async function logout() {
       nearbyRefreshInterval = null;
     }
     
-    // 3. Clear expiry validation interval if exists
+    // 3. Clean up ALL maps using registry
+    await cleanupAllMaps();
+    
+    // 4. Also clean individual map references
+    trackingMaps = {};
+    locationMap = null;
+    locationMarker = null;
+    inlinePickupMap = null;
+    inlinePickupMarker = null;
+    
+    // 5. Clear expiry validation
     const expiryInput = document.getElementById('food-expiry');
-    if (expiryInput && expiryInput.dataset.updateInterval) {
+    if (expiryInput?.dataset.updateInterval) {
       clearInterval(parseInt(expiryInput.dataset.updateInterval));
     }
     
-    // 4. Unsubscribe from all channels
+    // 6. Unsubscribe from channels
     const unsubscribePromises = [];
     
     messageSubscriptions.forEach(sub => {
@@ -2263,30 +2602,7 @@ async function logout() {
       new Promise(resolve => setTimeout(resolve, 2000))
     ]);
     
-    // 5. Clean up ALL maps
-    const cleanupMap = (map) => {
-      if (map) {
-        try {
-          map.off();
-          map.remove();
-        } catch(e) {
-          console.error('Map cleanup error:', e);
-        }
-      }
-    };
-    
-    Object.values(trackingMaps).forEach(cleanupMap);
-    trackingMaps = {};
-    
-    cleanupMap(locationMap);
-    locationMap = null;
-    locationMarker = null;
-    
-    cleanupMap(inlinePickupMap);
-    inlinePickupMap = null;
-    inlinePickupMarker = null;
-    
-    // 6. Clear all data
+    // 7. Clear all data
     currentUser = null;
     currentLiveLocation = null;
     selectedLocation = null;
@@ -2300,7 +2616,7 @@ async function logout() {
     window.inlineMapInitializing = false;
     buttonStates.clear();
     
-    // 7. Clear localStorage
+    // 8. Clear localStorage
     window.localStorage.removeItem('seva_user_id');
     
     console.log('✅ Logout complete');
@@ -2348,14 +2664,16 @@ async function showTab(tab) {
   const previousTab = currentTab;
   
   if (previousTab === tab) {
-    console.log(`⭕️ Already on ${tab} tab`);
+    console.log(`⭐ Already on ${tab} tab`);
     return;
   }
   
   currentTab = tab;
   console.log(`🔄 Switching from ${previousTab} to ${tab}`);
   
-  // ✅ PHASE 1: Stop location tracking when leaving nearby
+  // ============================================
+  // PHASE 1: Stop location tracking when leaving nearby
+  // ============================================
   if (previousTab === 'nearby' && tab !== 'nearby') {
     stopLiveLocationTracking();
     
@@ -2366,64 +2684,56 @@ async function showTab(tab) {
     }
   }
   
-  // ✅ PHASE 2: Clean up ALL maps
-  const cleanupMap = (map, mapName) => {
-    if (map) {
-      try {
-        console.log(`🧹 Cleaning up ${mapName}...`);
-        map.off();
-        map.remove();
-        console.log(`✅ ${mapName} cleaned up`);
-        return true;
-      } catch(e) {
-        console.error(`❌ Error cleaning up ${mapName}:`, e);
-        return false;
-      }
-    }
-    return true;
-  };
+  // ============================================
+  // PHASE 2: Clean up ALL maps using registry
+  // ============================================
+  const cleanupPromises = [];
   
   if (Object.keys(trackingMaps).length > 0) {
     console.log(`🧹 Cleaning up ${Object.keys(trackingMaps).length} tracking maps`);
     Object.keys(trackingMaps).forEach(mapId => {
-      cleanupMap(trackingMaps[mapId], `tracking map ${mapId}`);
+      const promise = safeMapCleanup(trackingMaps[mapId], mapId, `tracking-${mapId}`);
+      cleanupPromises.push(promise);
       delete trackingMaps[mapId];
     });
   }
   
   if (locationMap) {
-    cleanupMap(locationMap, 'location picker map');
+    cleanupPromises.push(
+      safeMapCleanup(locationMap, 'location-map', 'location-picker-map')
+    );
     locationMap = null;
     locationMarker = null;
     selectedLocation = null;
   }
   
   if (inlinePickupMap) {
-    cleanupMap(inlinePickupMap, 'inline pickup map');
+    cleanupPromises.push(
+      safeMapCleanup(inlinePickupMap, 'inline-pickup-map', 'inline-pickup-map')
+    );
     inlinePickupMap = null;
     inlinePickupMarker = null;
     selectedPickupLocation = null;
     
     const mapContainer = document.getElementById('inline-pickup-map-container');
-    if (mapContainer) {
-      mapContainer.classList.add('hide');
-    }
-    const mapElement = document.getElementById('inline-pickup-map');
-    if (mapElement) {
-      mapElement.innerHTML = '';
-    }
+    if (mapContainer) mapContainer.classList.add('hide');
   }
   
-  // ✅ PHASE 3: Wait for DOM cleanup
-  await new Promise(resolve => setTimeout(resolve, 250));
+  // Wait for all cleanup to complete
+  await Promise.allSettled(cleanupPromises);
   
+  // Additional safety delay
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  // Verify cleanup
   if (Object.keys(trackingMaps).length > 0) {
-    console.warn('⚠️ Tracking maps still exist after cleanup, forcing removal');
+    console.warn('⚠️ Tracking maps still exist, forcing removal');
     trackingMaps = {};
   }
   
-  // ✅ PHASE 4: Update tab UI
-  console.log('🎨 Updating tab UI...');
+  // ============================================
+  // PHASE 3: Update tab UI
+  // ============================================
   document.querySelectorAll('[id^="tab-"]').forEach(t => {
     t.classList.remove('tab-active');
     t.classList.add('text-gray-600');
@@ -2435,7 +2745,9 @@ async function showTab(tab) {
     tabBtn.classList.remove('text-gray-600');
   }
 
-  // ✅ PHASE 5: Load new content
+  // ============================================
+  // PHASE 4: Load new content
+  // ============================================
   console.log(`📄 Loading ${tab} content...`);
   
   try {
@@ -2460,7 +2772,7 @@ async function showTab(tab) {
       content.innerHTML = `
         <div class="card text-center">
           <div class="text-red-600 mb-2">⚠️ Error Loading Content</div>
-          <p class="text-sm text-gray-600">${error.message || 'Unknown error occurred'}</p>
+          <p class="text-sm text-gray-600">${escapeHtml(error.message || 'Unknown error occurred')}</p>
           <button onclick="showTab('${tab}')" class="btn-primary mt-4" style="width: auto;">
             🔄 Retry
           </button>
@@ -2839,15 +3151,24 @@ async function loadNearbyContent() {
     await loadNearbyVolunteersForBeneficiary(location);
     
     if (nearbyRefreshInterval) clearInterval(nearbyRefreshInterval);
-    nearbyRefreshInterval = setInterval(async () => {
-      if (currentTab === 'nearby') {
-        const currentLoc = getCurrentLocation();
-        if (currentLoc) {
-          await loadNearbyDonationsForBeneficiary(currentLoc);
-          await loadNearbyVolunteersForBeneficiary(currentLoc);
-        }
+// ✅ OPTIMIZED: Prevent overlapping refreshes
+let isRefreshing = false;
+
+nearbyRefreshInterval = setInterval(async () => {
+  if (currentTab === 'nearby' && !isRefreshing) {
+    isRefreshing = true;
+    try {
+      const currentLoc = getCurrentLocation();
+      if (currentLoc) {
+        await loadNearbyDonations(currentLoc);
       }
-    }, 15000);
+    } finally {
+      setTimeout(() => {
+        isRefreshing = false;
+      }, 1000);
+    }
+  }
+}, 15000);
   }
 }
 
@@ -4726,8 +5047,7 @@ async function selectPickupMethod(method) {
 
 
 // ============================================
-// ENHANCED INLINE PICKUP MAP - REPLACE initInlinePickupMap() function
-// Around line 2080
+// 🗺️ INLINE PICKUP MAP - COMPLETE REPLACEMENT
 // ============================================
 
 function initInlinePickupMap() {
@@ -4737,35 +5057,24 @@ function initInlinePickupMap() {
     return;
   }
 
-  // ============================================
-  // CRITICAL: Prevent multiple simultaneous initializations
-  // ============================================
+  const REGISTRY_KEY = 'inline-pickup-map';
+  
+  // Check if already initializing
   if (window.inlineMapInitializing) {
-    console.log('⏳ Map initialization already in progress, skipping...');
+    console.log('⏳ Map initialization in progress, skipping...');
     return;
   }
   
-  // Check if map already exists and is valid
-  if (inlinePickupMap) {
-    try {
-      if (inlinePickupMap._container && inlinePickupMap._container.parentNode) {
-        console.log('✅ Inline pickup map already initialized and valid');
-        inlinePickupMap.invalidateSize();
-        return;
-      } else {
-        console.warn('⚠️ Map exists but container invalid, will recreate');
-      }
-    } catch(e) {
-      console.warn('⚠️ Map validation failed, will recreate:', e.message);
-    }
+  // Check if map exists and is valid
+  if (inlinePickupMap && inlinePickupMap._container && inlinePickupMap._container.parentNode) {
+    console.log('✅ Inline pickup map already initialized');
+    inlinePickupMap.invalidateSize();
+    return;
   }
   
   window.inlineMapInitializing = true;
-  console.log('🚀 Initializing inline pickup map...');
-
-  // ============================================
+  
   // Show loading indicator
-  // ============================================
   mapElement.innerHTML = `
     <div class="map-loading-container">
       <div class="loading-spinner"></div>
@@ -4773,100 +5082,59 @@ function initInlinePickupMap() {
     </div>
   `;
   
-  // ============================================
-  // Complete cleanup of existing map
-  // ============================================
+  // Complete cleanup
   if (inlinePickupMap) {
-    console.log('🧹 Cleaning up existing inline pickup map...');
-    try { 
-      inlinePickupMap.off();
-      inlinePickupMap.remove(); 
-    } catch(e) {
-      console.error('❌ Error removing existing map:', e);
-    }
+    safeMapCleanup(inlinePickupMap, 'inline-pickup-map', REGISTRY_KEY);
     inlinePickupMap = null;
     inlinePickupMarker = null;
     selectedPickupLocation = null;
   }
 
-  // ============================================
-  // Initialize map after short delay
-  // ============================================
+  // Initialize after short delay
   setTimeout(() => {
     try {
-      // Clear loading indicator
-      mapElement.innerHTML = '';
-      mapElement.style.height = '300px';
-      mapElement.style.width = '100%';
-
       const centerLat = currentUser?.location_lat || 21.1702;
       const centerLng = currentUser?.location_lng || 72.8311;
       
-      console.log('📍 Map center:', centerLat.toFixed(4), centerLng.toFixed(4));
-      
-      // ============================================
-      // Create map instance with mobile optimizations
-      // ============================================
-      inlinePickupMap = L.map('inline-pickup-map', {
+      // Create map using safe init
+      inlinePickupMap = safeMapInit('inline-pickup-map', REGISTRY_KEY, {
         center: [centerLat, centerLng],
         zoom: 13,
-        zoomControl: true,
-        attributionControl: true,
-        preferCanvas: true,
-        tap: false, // ✅ Prevents issues on mobile
-        touchZoom: true, // ✅ Enable pinch-to-zoom
-        scrollWheelZoom: false, // ✅ Prevent accidental zoom
-        doubleClickZoom: false // ✅ Prevent double-tap zoom
+        scrollWheelZoom: false,
+        touchZoom: true,
+        doubleClickZoom: false
       });
-      
-      const statusText = document.getElementById('pickup-location-text');
-      if (statusText) {
-        statusText.innerHTML = `
-          <div style="color: #2196F3; font-weight: 600;">📍 Map Loading...</div>
-          <div style="color: #666; font-size: 12px; margin-top: 4px;">Click anywhere on the map to select pickup location</div>
-        `;
-      }
       
       if (!inlinePickupMap) {
         throw new Error('Failed to create map instance');
       }
       
-      console.log('✅ Map instance created');
+      // Update status
+      // ✅ ENHANCED: Better visual feedback
+const statusText = document.getElementById('pickup-location-text');
+if (statusText) {
+  statusText.innerHTML = `
+    <div style="color: #2196F3; font-weight: 600;">
+      <span style="display: inline-block; width: 12px; height: 12px; border: 2px solid #2196F3; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 6px; vertical-align: middle;"></span>
+      Map Loading...
+    </div>
+    <div style="color: #666; font-size: 12px; margin-top: 4px;">Please wait while we load the map...</div>
+  `;
+}
       
-      // ============================================
-      // Add tile layer with error handling
-      // ============================================
-      const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
-        maxZoom: 19,
-        errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-      });
-      
-      tileLayer.on('tileerror', (error) => {
-        console.warn('⚠️ Tile loading error:', error);
-      });
-      
-      tileLayer.on('load', () => {
-        console.log('✅ Tiles loaded successfully');
-      });
-      
-      tileLayer.addTo(inlinePickupMap);
-      console.log('🗺️ Tile layer added');
+        maxZoom: 19
+      }).addTo(inlinePickupMap);
 
-      // ============================================
-      // Click handler with debouncing and locking
-      // ============================================
+      // Click handler with debouncing
       let clickTimeout;
       let isProcessingClick = false;
       
       inlinePickupMap.on('click', async function(e) {
-        // Prevent rapid multiple clicks
-        if (isProcessingClick) {
-          console.log('⏳ Already processing click, ignoring...');
-          return;
-        }
+        if (isProcessingClick) return;
         
-        // Debounce clicks
         if (clickTimeout) clearTimeout(clickTimeout);
         
         clickTimeout = setTimeout(async () => {
@@ -4875,11 +5143,7 @@ function initInlinePickupMap() {
           const clickedLat = e.latlng.lat;
           const clickedLng = e.latlng.lng;
           
-          console.log('🖱️ Map clicked at:', clickedLat.toFixed(6), clickedLng.toFixed(6));
-          
-          // Validate coordinates
           if (!isValidCoordinate(clickedLat, clickedLng)) {
-            console.error('❌ Invalid coordinates:', clickedLat, clickedLng);
             isProcessingClick = false;
             return;
           }
@@ -4888,55 +5152,38 @@ function initInlinePickupMap() {
           if (inlinePickupMarker) {
             try { 
               inlinePickupMap.removeLayer(inlinePickupMarker);
-              console.log('🗑️ Removed previous marker'); 
-            } catch(err) {
-              console.error('❌ Error removing marker:', err);
-            }
+            } catch(err) {}
           }
           
-          // Add new marker with custom styling
+          // Add new marker
           inlinePickupMarker = L.marker([clickedLat, clickedLng], {
             icon: L.divIcon({
               className: 'custom-pickup-marker',
               html: '<div style="background: #FF6B3D; color: white; padding: 8px; border-radius: 50%; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📍</div>',
               iconSize: [40, 40],
               iconAnchor: [20, 40]
-            }),
-            draggable: false
+            })
           }).addTo(inlinePickupMap);
           
-          console.log('📌 Marker added at pickup location');
+          selectedPickupLocation = { lat: clickedLat, lng: clickedLng };
           
-          // Store selected location immediately
-          selectedPickupLocation = { 
-            lat: clickedLat, 
-            lng: clickedLng 
-          };
-          
-          // Set form values immediately
           document.getElementById('pickup-lat').value = clickedLat;
           document.getElementById('pickup-lng').value = clickedLng;
           
-          // Update status - show loading
           const statusText = document.getElementById('pickup-location-text');
           if (statusText) {
             statusText.textContent = '🔄 Getting address...';
             statusText.style.color = '#666';
           }
           
-          // Get address asynchronously
           try {
             const address = await reverseGeocode(clickedLat, clickedLng);
-            console.log('📍 Address resolved:', address);
-            
             if (statusText) {
               statusText.textContent = `📍 Selected: ${address}`;
               statusText.style.color = '#4CAF50';
               statusText.style.fontWeight = '600';
             }
           } catch (error) {
-            console.error('❌ Reverse geocode error:', error);
-            
             if (statusText) {
               statusText.textContent = `📍 Selected: ${clickedLat.toFixed(6)}, ${clickedLng.toFixed(6)}`;
               statusText.style.color = '#4CAF50';
@@ -4944,49 +5191,35 @@ function initInlinePickupMap() {
             }
           }
           
-          console.log('✅ Pickup location selected');
+          setTimeout(() => { isProcessingClick = false; }, 500);
           
-          // Unlock click processing after delay
-          setTimeout(() => {
-            isProcessingClick = false;
-          }, 500);
-          
-        }, 250); // 250ms debounce
+        }, 250);
       });
 
-      // ============================================
-      // Force map to render properly (multi-stage)
-      // ============================================
+      // Force proper rendering
       setTimeout(() => {
         if (inlinePickupMap) {
           try {
             inlinePickupMap.invalidateSize();
-            console.log('✅ First invalidateSize() completed');
-            
-            // Second invalidation for reliability
             setTimeout(() => {
               if (inlinePickupMap) {
                 inlinePickupMap.invalidateSize();
                 inlinePickupMap.setView([centerLat, centerLng], 13);
                 window.inlineMapInitializing = false;
-                console.log('✅ Inline pickup map fully initialized');
+                console.log('✅ Inline pickup map ready');
               }
             }, 200);
           } catch(e) {
-            console.error('❌ Error in invalidateSize():', e);
+            console.error('❌ invalidateSize error:', e);
             window.inlineMapInitializing = false;
           }
-        } else {
-          console.error('❌ Map instance lost during initialization');
-          window.inlineMapInitializing = false;
         }
       }, 300);
 
     } catch(error) {
-      console.error('❌ Fatal error initializing inline pickup map:', error);
+      console.error('❌ Fatal map initialization error:', error);
       window.inlineMapInitializing = false;
       
-      // Show error message to user
       const statusText = document.getElementById('pickup-location-text');
       if (statusText) {
         statusText.innerHTML = `
@@ -4997,11 +5230,8 @@ function initInlinePickupMap() {
         `;
       }
       
-      // Hide map container
       const container = document.getElementById('inline-pickup-map-container');
-      if (container) {
-        container.classList.add('hide');
-      }
+      if (container) container.classList.add('hide');
     }
   }, 100);
 }
@@ -5123,8 +5353,7 @@ function closeLocationPicker() {
   console.log('✅ Location picker modal fully closed and cleaned');
 }
 // ============================================
-// SECTION 6: ENHANCED LOCATION MAP
-// Replace lines ~2500-2620
+// 🗺️ LOCATION PICKER MAP - COMPLETE REPLACEMENT
 // ============================================
 
 function initLocationMap() {
@@ -5134,7 +5363,9 @@ function initLocationMap() {
     return;
   }
 
-  // Show loading indicator
+  const REGISTRY_KEY = 'location-picker-map';
+  
+  // Show loading
   mapElement.innerHTML = `
     <div class="map-loading-container">
       <div class="loading-spinner"></div>
@@ -5142,65 +5373,40 @@ function initLocationMap() {
     </div>
   `;
   
-  // Remove existing map if any
+  // Cleanup existing map
   if (locationMap) {
-    try { 
-      locationMap.off();
-      locationMap.remove(); 
-    } catch(e) {
-      console.error('Error removing existing location map:', e);
-    }
+    safeMapCleanup(locationMap, 'location-map', REGISTRY_KEY);
     locationMap = null;
     locationMarker = null;
   }
 
-  // Wait for DOM to be ready
   setTimeout(() => {
     try {
-      // Clear the map container
-      mapElement.innerHTML = '';
-      mapElement.style.height = '300px';
-
       const centerLat = currentUser?.location_lat || 21.1702;
       const centerLng = currentUser?.location_lng || 72.8311;
       
-      // Create map with proper configuration
-      locationMap = L.map('location-map', {
+      // Create map
+      locationMap = safeMapInit('location-map', REGISTRY_KEY, {
         center: [centerLat, centerLng],
-        zoom: 13,
-        zoomControl: true,
-        attributionControl: true,
-        preferCanvas: true,
-        tap: false
+        zoom: 13
       });
       
       if (!locationMap) {
-        throw new Error('Failed to create map instance');
+        throw new Error('Failed to create map');
       }
       
-      // Add tile layer with error handling
-      const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      // Add tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
-        maxZoom: 19,
-        errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-      });
-      
-      tileLayer.on('tileerror', (error) => {
-        console.warn('⚠️ Tile loading error:', error);
-      });
-      
-      tileLayer.addTo(locationMap);
+        maxZoom: 19
+      }).addTo(locationMap);
 
-      // Add click handler with debouncing
+      // Click handler
       let clickTimeout;
       let isProcessingClick = false;
       
       locationMap.on('click', async function(e) {
-        // Prevent multiple rapid clicks
-        if (isProcessingClick) {
-          console.log('⏳ Already processing click, ignoring...');
-          return;
-        }
+        if (isProcessingClick) return;
         
         if (clickTimeout) clearTimeout(clickTimeout);
         
@@ -5210,51 +5416,36 @@ function initLocationMap() {
           const clickedLat = e.latlng.lat;
           const clickedLng = e.latlng.lng;
           
-          console.log('🖱️ Map clicked at:', clickedLat.toFixed(6), clickedLng.toFixed(6));
-          
-          // Validate coordinates
           if (!isValidCoordinate(clickedLat, clickedLng)) {
-            console.error('Invalid coordinates clicked');
             isProcessingClick = false;
             return;
           }
           
           // Remove existing marker
           if (locationMarker) {
-            try { 
-              locationMap.removeLayer(locationMarker); 
-            } catch(err) {
-              console.error('Error removing marker:', err);
-            }
+            try { locationMap.removeLayer(locationMarker); } catch(err) {}
           }
           
-          // Add new marker
+          // Add marker
           locationMarker = L.marker([clickedLat, clickedLng], {
             icon: L.divIcon({
               className: 'custom-location-marker',
               html: '<div style="background: #2196F3; color: white; padding: 8px; border-radius: 50%; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📍</div>',
               iconSize: [40, 40],
               iconAnchor: [20, 40]
-            }),
-            draggable: false
+            })
           }).addTo(locationMap);
           
-          // Show loading state
           const statusEl = document.getElementById('location-status');
           if (statusEl) {
             statusEl.textContent = '🔄 Getting address...';
             statusEl.style.color = '#666';
           }
           
-          // Get address
           try {
             const address = await reverseGeocode(clickedLat, clickedLng);
             
-            selectedLocation = { 
-              lat: clickedLat, 
-              lng: clickedLng, 
-              address: address 
-            };
+            selectedLocation = { lat: clickedLat, lng: clickedLng, address };
             
             const confirmBtn = document.getElementById('confirm-location-btn');
             if (confirmBtn) confirmBtn.disabled = false;
@@ -5265,8 +5456,6 @@ function initLocationMap() {
               statusEl.style.fontWeight = '600';
             }
           } catch (error) {
-            console.error('Reverse geocode error:', error);
-            
             selectedLocation = { 
               lat: clickedLat, 
               lng: clickedLng, 
@@ -5279,40 +5468,30 @@ function initLocationMap() {
             if (statusEl) {
               statusEl.textContent = `✅ Selected: ${clickedLat.toFixed(6)}, ${clickedLng.toFixed(6)}`;
               statusEl.style.color = '#4CAF50';
-              statusEl.style.fontWeight = '600';
             }
           }
           
-          // Unlock click processing
-          setTimeout(() => {
-            isProcessingClick = false;
-          }, 500);
+          setTimeout(() => { isProcessingClick = false; }, 500);
           
-        }, 250); // 250ms debounce
+        }, 250);
       });
 
-      // Force map to render properly
+      // Render properly
       setTimeout(() => {
         if (locationMap) {
-          try {
-            locationMap.invalidateSize();
-            
-            // Second invalidation for reliability
-            setTimeout(() => {
-              if (locationMap) {
-                locationMap.invalidateSize();
-                locationMap.setView([centerLat, centerLng], 13);
-                console.log('✅ Location map fully initialized');
-              }
-            }, 200);
-          } catch(e) {
-            console.error('❌ Error in invalidateSize():', e);
-          }
+          locationMap.invalidateSize();
+          setTimeout(() => {
+            if (locationMap) {
+              locationMap.invalidateSize();
+              locationMap.setView([centerLat, centerLng], 13);
+              console.log('✅ Location map ready');
+            }
+          }, 200);
         }
       }, 300);
 
     } catch(error) {
-      console.error('❌ Fatal error initializing location map:', error);
+      console.error('❌ Location map error:', error);
       
       const statusEl = document.getElementById('location-status');
       if (statusEl) {
@@ -5459,9 +5638,146 @@ function closeDeliveryModal() {
 
 
 
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js");
+// ============================================
+// ENHANCED SERVICE WORKER REGISTRATION
+// ============================================
+
+// Enhanced Service Worker Registration with Update Detection
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) {
+    console.log('❌ Service workers not supported');
+    return null;
   }
+
+  try {
+    console.log('📄 Registering service worker...');
+    const registration = await navigator.serviceWorker.register('/sw.js', {
+      scope: '/',
+      updateViaCache: 'none'
+    });
+    
+    console.log('✅ Service Worker registered:', registration.scope);
+    serviceWorkerRegistration = registration;
+    
+    // Check for updates every 60 seconds
+    setInterval(() => {
+      registration.update();
+    }, 60000);
+    
+    // Handle updates
+    registration.addEventListener('updatefound', () => {
+      const newWorker = registration.installing;
+      console.log('🔄 Service Worker update found');
+      
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          console.log('🆕 New Service Worker available');
+          showUpdateNotification(registration);
+        }
+      });
+    });
+    
+    // Listen for controller change
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.log('🔄 Controller changed, reloading...');
+      window.location.reload();
+    });
+    
+    // Listen for messages from SW
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      console.log('📨 Message from SW:', event.data);
+      
+      if (event.data.type === 'SW_UPDATED') {
+        showUpdateNotification(registration);
+      } else if (event.data.type === 'SYNC_DONATIONS') {
+        if (currentUser && currentTab === 'home') {
+          loadHomeContent();
+        }
+      } else if (event.data.type === 'SYNC_MESSAGES') {
+        if (currentUser) {
+          loadUnreadMessages();
+        }
+      }
+    });
+    
+    await navigator.serviceWorker.ready;
+    console.log('✅ Service Worker is ready');
+    
+    return registration;
+  } catch (error) {
+    console.error('❌ Service Worker registration failed:', error);
+    return null;
+  }
+}
+
+// Show update notification to user
+function showUpdateNotification(registration) {
+  const updateBanner = document.createElement('div');
+  updateBanner.id = 'update-banner';
+  updateBanner.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px;
+    text-align: center;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    animation: slideDown 0.3s ease-out;
+  `;
+  
+  updateBanner.innerHTML = `
+    <div style="max-width: 600px; margin: 0 auto;">
+      <div style="font-weight: 600; margin-bottom: 8px;">🎉 New Update Available!</div>
+      <div style="font-size: 14px; opacity: 0.9; margin-bottom: 12px;">
+        A new version of Seva is ready with improvements and bug fixes.
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button onclick="activateUpdate()" style="background: white; color: #667eea; padding: 8px 24px; border-radius: 20px; border: none; font-weight: 600; cursor: pointer;">
+          Update Now
+        </button>
+        <button onclick="dismissUpdate()" style="background: rgba(255,255,255,0.2); color: white; padding: 8px 24px; border-radius: 20px; border: none; font-weight: 600; cursor: pointer;">
+          Later
+        </button>
+      </div>
+    </div>
+  `;
+  
+  // Add CSS animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideDown {
+      from { transform: translateY(-100%); }
+      to { transform: translateY(0); }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  document.body.appendChild(updateBanner);
+  
+  // Store registration for update
+  window.pendingUpdate = registration;
+}
+
+// Activate the new service worker
+window.activateUpdate = function() {
+  const registration = window.pendingUpdate;
+  if (registration && registration.waiting) {
+    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  }
+  dismissUpdate();
+};
+
+// Dismiss update banner
+window.dismissUpdate = function() {
+  const banner = document.getElementById('update-banner');
+  if (banner) {
+    banner.style.animation = 'slideDown 0.3s ease-out reverse';
+    setTimeout(() => banner.remove(), 300);
+  }
+};
 
 </script>
 </body>
