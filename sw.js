@@ -1,135 +1,129 @@
-// ============================================
-// SEVA PWA - ENHANCED SERVICE WORKER v3.0.0
-// ============================================
+// sw.js - Enhanced Service Worker for Seva Platform v2.0
+const CACHE_VERSION = 'seva-v2.1';
+const CACHE_NAME = `seva-cache-${CACHE_VERSION}`;
 
-const CACHE_VERSION = 'seva-v3.0.0';
-const RUNTIME_CACHE = 'seva-runtime-v3';
-const IMAGE_CACHE = 'seva-images-v3';
-const MAP_CACHE = 'seva-maps-v3';
-
-// Critical assets for offline functionality
-const CRITICAL_ASSETS = [
+// Assets to cache immediately
+const CORE_ASSETS = [
   '/',
   '/index.html',
-  '/site.webmanifest',
   '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/icons/maskable-192x192.png',
-  '/icons/maskable-512x512.png'
+  '/site.webmanifest'
 ];
 
-// External dependencies (attempt to cache, but don't fail install)
-const OPTIONAL_ASSETS = [
+// CDN assets to cache
+const CDN_ASSETS = [
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
 
+// Cache strategies
+const CACHE_STRATEGIES = {
+  cacheFirst: ['css', 'js', 'woff2', 'woff', 'ttf', 'svg', 'png', 'jpg', 'jpeg', 'gif', 'webp'],
+  networkFirst: ['html', 'json'],
+  networkOnly: ['api']
+};
+
 // ============================================
-// INSTALL - Cache critical assets
+// INSTALL EVENT
 // ============================================
 self.addEventListener('install', (event) => {
-  console.log('[SW v3] Installing...');
+  console.log('[SW] Installing Service Worker v' + CACHE_VERSION);
   
   event.waitUntil(
-    Promise.all([
-      // Cache critical assets (must succeed)
-      caches.open(CACHE_VERSION).then((cache) => {
-        console.log('[SW] Caching critical assets');
-        return cache.addAll(CRITICAL_ASSETS.map(url => 
-          new Request(url, {cache: 'reload'})
-        ));
-      }),
-      
-      // Cache optional assets (can fail)
-      caches.open(CACHE_VERSION).then((cache) => {
-        console.log('[SW] Attempting to cache optional assets');
-        return Promise.allSettled(
-          OPTIONAL_ASSETS.map(url => 
-            cache.add(new Request(url, {cache: 'reload'}))
-              .catch(err => console.warn('[SW] Failed to cache:', url, err))
-          )
-        );
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('[SW] Caching core assets');
+        return cache.addAll(CORE_ASSETS);
       })
-    ])
-    .then(() => {
-      console.log('[SW] Installation complete');
-      return self.skipWaiting();
-    })
-    .catch((error) => {
-      console.error('[SW] Installation failed:', error);
-      throw error;
-    })
+      .then(() => {
+        // Optionally cache CDN assets (don't fail if CDN is down)
+        return caches.open(CACHE_NAME).then((cache) => {
+          return Promise.allSettled(
+            CDN_ASSETS.map(url => 
+              cache.add(url).catch(err => {
+                console.warn(`[SW] Failed to cache ${url}:`, err);
+              })
+            )
+          );
+        });
+      })
+      .then(() => {
+        console.log('[SW] Installation complete');
+        return self.skipWaiting();
+      })
+      .catch(err => {
+        console.error('[SW] Installation failed:', err);
+      })
   );
 });
 
 // ============================================
-// ACTIVATE - Clean up old caches
+// ACTIVATE EVENT
 // ============================================
 self.addEventListener('activate', (event) => {
-  console.log('[SW v3] Activating...');
-  
-  const validCaches = [CACHE_VERSION, RUNTIME_CACHE, IMAGE_CACHE, MAP_CACHE];
+  console.log('[SW] Activating Service Worker v' + CACHE_VERSION);
   
   event.waitUntil(
-    Promise.all([
-      // Clean up old caches
-      caches.keys().then((cacheNames) => {
+    caches.keys()
+      .then((cacheNames) => {
         return Promise.all(
-          cacheNames
-            .filter((cacheName) => !validCaches.includes(cacheName))
-            .map((cacheName) => {
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME && cacheName.startsWith('seva-cache-')) {
               console.log('[SW] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
-            })
+            }
+          })
         );
-      }),
-      
-      // Take control of all clients
-      self.clients.claim()
-    ])
-    .then(() => {
-      console.log('[SW] Activation complete');
-      
-      // Notify all clients about the update
-      return self.clients.matchAll().then(clients => {
-        clients.forEach(client => {
-          client.postMessage({
-            type: 'SW_UPDATED',
-            version: CACHE_VERSION
+      })
+      .then(() => {
+        console.log('[SW] Activation complete');
+        return self.clients.claim();
+      })
+      .then(() => {
+        // Notify all clients of update
+        return self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'SW_UPDATED',
+              version: CACHE_VERSION
+            });
           });
         });
-      });
-    })
+      })
   );
 });
 
 // ============================================
-// FETCH - Smart caching strategy
+// FETCH EVENT - Smart Caching Strategy
 // ============================================
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-
-  // Skip non-GET requests
-  if (request.method !== 'GET') return;
   
-  // Skip Supabase API calls (always fresh)
-  if (url.hostname.includes('supabase.co')) return;
+  // Skip chrome extensions and non-http requests
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
   
-  // Skip chrome extensions
-  if (url.protocol === 'chrome-extension:') return;
-
-  // Route based on request type
-  if (request.destination === 'image') {
-    event.respondWith(cacheFirstStrategy(request, IMAGE_CACHE));
-  } else if (url.hostname.includes('openstreetmap.org')) {
-    event.respondWith(cacheFirstStrategy(request, MAP_CACHE));
-  } else if (url.hostname.includes('leaflet')) {
-    event.respondWith(cacheFirstStrategy(request, CACHE_VERSION));
-  } else {
+  // Skip Supabase API calls (always network)
+  if (url.hostname.includes('supabase.co')) {
+    return event.respondWith(fetch(request));
+  }
+  
+  // Determine cache strategy based on file type
+  const fileExtension = url.pathname.split('.').pop().toLowerCase();
+  
+  if (CACHE_STRATEGIES.cacheFirst.includes(fileExtension)) {
+    // Cache first strategy (for static assets)
+    event.respondWith(cacheFirstStrategy(request));
+  } else if (CACHE_STRATEGIES.networkFirst.includes(fileExtension)) {
+    // Network first strategy (for HTML/JSON)
     event.respondWith(networkFirstStrategy(request));
+  } else {
+    // Default: Network with cache fallback
+    event.respondWith(networkWithCacheFallback(request));
   }
 });
 
@@ -137,138 +131,136 @@ self.addEventListener('fetch', (event) => {
 // CACHING STRATEGIES
 // ============================================
 
-// Network-first: Try network, fallback to cache
-async function networkFirstStrategy(request) {
-  const cache = await caches.open(RUNTIME_CACHE);
+// Cache First - Best for static assets
+async function cacheFirstStrategy(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+  
+  if (cached) {
+    // Return cached version, update in background
+    fetchAndCache(request, cache);
+    return cached;
+  }
   
   try {
-    const networkResponse = await fetch(request);
-    
-    if (networkResponse && networkResponse.status === 200) {
-      // Clone before caching (response can only be read once)
-      cache.put(request, networkResponse.clone());
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
     }
-    
-    return networkResponse;
+    return response;
   } catch (error) {
-    console.log('[SW] Network failed, using cache:', request.url);
+    console.error('[SW] Cache first fetch failed:', error);
+    throw error;
+  }
+}
+
+// Network First - Best for dynamic content
+async function networkFirstStrategy(request) {
+  const cache = await caches.open(CACHE_NAME);
+  
+  try {
+    const response = await fetch(request, { 
+      cache: 'no-cache',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
     
-    const cachedResponse = await cache.match(request);
-    
-    if (cachedResponse) {
-      return cachedResponse;
+    if (response.ok) {
+      cache.put(request, response.clone());
     }
+    return response;
+  } catch (error) {
+    console.warn('[SW] Network first failed, trying cache:', error);
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    throw error;
+  }
+}
+
+// Network with Cache Fallback - Default strategy
+async function networkWithCacheFallback(request) {
+  const cache = await caches.open(CACHE_NAME);
+  
+  try {
+    const response = await fetch(request);
+    if (response.ok && request.method === 'GET') {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
     
     // Return offline page for navigation requests
     if (request.mode === 'navigate') {
-      const fallback = await caches.match('/index.html');
-      if (fallback) return fallback;
+      return caches.match('/index.html');
     }
     
-    // Return error response
-    return new Response(
-      JSON.stringify({ error: 'Network error', offline: true }),
-      {
-        status: 503,
-        statusText: 'Service Unavailable',
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    throw error;
   }
 }
 
-// Cache-first: Use cache, update in background
-async function cacheFirstStrategy(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cachedResponse = await cache.match(request);
-  
-  if (cachedResponse) {
-    // Return cached version immediately
-    // Update cache in background (don't await)
-    fetch(request).then(networkResponse => {
-      if (networkResponse && networkResponse.status === 200) {
-        cache.put(request, networkResponse);
+// Background fetch and cache update
+function fetchAndCache(request, cache) {
+  fetch(request)
+    .then(response => {
+      if (response.ok) {
+        cache.put(request, response.clone());
       }
-    }).catch(() => {
-      // Silently fail background update
+    })
+    .catch(() => {
+      // Silently fail background updates
     });
-    
-    return cachedResponse;
-  }
-  
-  // No cache, fetch from network
-  try {
-    const networkResponse = await fetch(request);
-    
-    if (networkResponse && networkResponse.status === 200) {
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    // Return placeholder for images
-    if (request.destination === 'image') {
-      return new Response(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#ccc" width="200" height="200"/><text x="50%" y="50%" text-anchor="middle" fill="#666">No Image</text></svg>',
-        { headers: { 'Content-Type': 'image/svg+xml' } }
-      );
-    }
-    
-    return new Response('Resource not available offline', {
-      status: 503,
-      headers: { 'Content-Type': 'text/plain' }
-    });
-  }
 }
 
 // ============================================
-// PUSH NOTIFICATIONS
+// PUSH NOTIFICATION EVENT
 // ============================================
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push received:', event);
+  console.log('[SW] Push notification received');
   
-  let notificationData = {
-    title: 'Seva',
-    body: 'New notification',
-    icon: '/icons/icon-192x192.png'
-  };
-  
-  if (event.data) {
-    try {
-      notificationData = event.data.json();
-    } catch (e) {
-      notificationData.body = event.data.text();
-    }
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    console.error('[SW] Failed to parse push data:', e);
+    data = { title: 'Seva', body: 'New notification' };
   }
   
+  const title = data.title || 'Seva - Food Donation';
   const options = {
-    body: notificationData.body || 'New notification from Seva',
-    icon: notificationData.icon || '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
-    tag: notificationData.tag || `seva-${Date.now()}`,
-    requireInteraction: notificationData.requireInteraction || false,
+    body: data.body || 'You have a new update',
+    icon: data.icon || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%23FF6B3D' width='192' height='192' rx='48'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='white'%3E❤️%3C/text%3E%3C/svg%3E",
+    badge: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Ccircle fill='%23FF6B3D' cx='36' cy='36' r='36'/%3E%3Ctext x='36' y='50' font-size='40' text-anchor='middle' fill='white'%3E❤️%3C/text%3E%3C/svg%3E",
     vibrate: [200, 100, 200],
+    tag: data.tag || 'seva-notification',
+    requireInteraction: data.requireInteraction || false,
     data: {
-      url: notificationData.url || '/',
-      donationId: notificationData.donationId,
-      timestamp: Date.now()
+      url: data.url || '/',
+      timestamp: Date.now(),
+      ...data
     },
-    actions: [
-      { action: 'open', title: '👁️ View', icon: '/icons/icon-72x72.png' },
-      { action: 'close', title: '✖️ Dismiss' }
+    actions: data.actions || [
+      { action: 'open', title: '👁️ View', icon: '/icons/view.png' },
+      { action: 'close', title: '✖️ Close', icon: '/icons/close.png' }
     ]
   };
   
   event.waitUntil(
-    self.registration.showNotification(notificationData.title || 'Seva', options)
+    self.registration.showNotification(title, options)
+      .then(() => {
+        console.log('[SW] Notification shown successfully');
+      })
+      .catch(err => {
+        console.error('[SW] Failed to show notification:', err);
+      })
   );
 });
 
 // ============================================
-// NOTIFICATION CLICK
+// NOTIFICATION CLICK EVENT
 // ============================================
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.action, event.notification.tag);
+  console.log('[SW] Notification clicked:', event.action);
   
   event.notification.close();
   
@@ -281,23 +273,50 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // Check if window is already open
+        // Check if app is already open
         for (let client of clientList) {
-          if (client.url.includes(urlToOpen) && 'focus' in client) {
+          if (client.url === urlToOpen && 'focus' in client) {
             return client.focus();
           }
         }
         
-        // Open new window
+        // Open new window if not already open
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen);
         }
+      })
+      .catch(err => {
+        console.error('[SW] Failed to handle notification click:', err);
       })
   );
 });
 
 // ============================================
-// BACKGROUND SYNC
+// MESSAGE EVENT - Handle commands from app
+// ============================================
+self.addEventListener('message', (event) => {
+  console.log('[SW] Message received:', event.data);
+  
+  if (event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  } else if (event.data.type === 'CACHE_URLS') {
+    const urls = event.data.urls || [];
+    event.waitUntil(
+      caches.open(CACHE_NAME).then(cache => {
+        return cache.addAll(urls);
+      })
+    );
+  } else if (event.data.type === 'CLEAR_CACHE') {
+    event.waitUntil(
+      caches.keys().then(names => {
+        return Promise.all(names.map(name => caches.delete(name)));
+      })
+    );
+  }
+});
+
+// ============================================
+// BACKGROUND SYNC EVENT
 // ============================================
 self.addEventListener('sync', (event) => {
   console.log('[SW] Background sync:', event.tag);
@@ -313,16 +332,15 @@ async function syncDonations() {
   try {
     console.log('[SW] Syncing donations...');
     
-    // Send message to all clients to trigger sync
+    // Notify clients to refresh donations
     const clients = await self.clients.matchAll();
     clients.forEach(client => {
       client.postMessage({ type: 'SYNC_DONATIONS' });
     });
     
-    return Promise.resolve();
+    console.log('[SW] Donations synced');
   } catch (error) {
-    console.error('[SW] Donation sync failed:', error);
-    throw error;
+    console.error('[SW] Sync donations failed:', error);
   }
 }
 
@@ -330,50 +348,47 @@ async function syncMessages() {
   try {
     console.log('[SW] Syncing messages...');
     
+    // Notify clients to refresh messages
     const clients = await self.clients.matchAll();
     clients.forEach(client => {
       client.postMessage({ type: 'SYNC_MESSAGES' });
     });
     
-    return Promise.resolve();
+    console.log('[SW] Messages synced');
   } catch (error) {
-    console.error('[SW] Message sync failed:', error);
-    throw error;
+    console.error('[SW] Sync messages failed:', error);
   }
 }
 
 // ============================================
-// MESSAGE HANDLER
+// PERIODIC BACKGROUND SYNC
 // ============================================
-self.addEventListener('message', (event) => {
-  console.log('[SW] Message received:', event.data);
+self.addEventListener('periodicsync', (event) => {
+  console.log('[SW] Periodic sync:', event.tag);
   
-  if (!event.data) return;
-  
-  switch (event.data.type) {
-    case 'SKIP_WAITING':
-      self.skipWaiting();
-      break;
-      
-    case 'CLEAR_CACHE':
-      event.waitUntil(
-        caches.keys().then((cacheNames) => {
-          return Promise.all(
-            cacheNames.map((cacheName) => {
-              console.log('[SW] Clearing cache:', cacheName);
-              return caches.delete(cacheName);
-            })
-          );
-        }).then(() => {
-          event.ports[0]?.postMessage({ success: true });
-        })
-      );
-      break;
-      
-    case 'GET_VERSION':
-      event.ports[0]?.postMessage({ version: CACHE_VERSION });
-      break;
+  if (event.tag === 'update-content') {
+    event.waitUntil(updateContent());
   }
 });
 
-console.log('[SW v3] Service worker loaded successfully');
+async function updateContent() {
+  try {
+    console.log('[SW] Updating content in background...');
+    
+    // Update cache with latest content
+    const cache = await caches.open(CACHE_NAME);
+    await Promise.allSettled(
+      CORE_ASSETS.map(url => fetch(url).then(response => {
+        if (response.ok) {
+          return cache.put(url, response);
+        }
+      }))
+    );
+    
+    console.log('[SW] Content updated');
+  } catch (error) {
+    console.error('[SW] Update content failed:', error);
+  }
+}
+
+console.log('[SW] Service Worker loaded successfully v' + CACHE_VERSION);
