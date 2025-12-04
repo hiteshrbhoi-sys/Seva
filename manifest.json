@@ -1,8 +1,7 @@
 {
   "name": "Seva - Food Donation Platform",
   "short_name": "Seva",
-  "id": "/?source=pwa",
-  "description": "Connect donors, volunteers, and beneficiaries for food donations. Share surplus food, volunteer for deliveries, or receive help from your community with real-time GPS tracking.",
+  "description": "Connect donors, volunteers, and beneficiaries to reduce food waste and fight hunger",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
@@ -10,176 +9,128 @@
   "background_color": "#1E3A5F",
   "theme_color": "#FF6B3D",
   "orientation": "portrait-primary",
+  "categories": ["social", "lifestyle", "utilities"],
   "lang": "en-US",
   "dir": "ltr",
-  "categories": ["food", "lifestyle", "social", "utilities", "productivity"],
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/icons/icon-72x72.png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Crect fill='%23FF6B3D' width='72' height='72' rx='16'/%3E%3Ctext x='36' y='52' font-size='48' text-anchor='middle' fill='white'%3E❤️%3C/text%3E%3C/svg%3E",
       "sizes": "72x72",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-96x96.png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect fill='%23FF6B3D' width='96' height='96' rx='20'/%3E%3Ctext x='48' y='66' font-size='60' text-anchor='middle' fill='white'%3E❤️%3C/text%3E%3C/svg%3E",
       "sizes": "96x96",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-128x128.png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect fill='%23FF6B3D' width='128' height='128' rx='28'/%3E%3Ctext x='64' y='88' font-size='80' text-anchor='middle' fill='white'%3E❤️%3C/text%3E%3C/svg%3E",
       "sizes": "128x128",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-192x192.png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%23FF6B3D' width='192' height='192' rx='48'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='white'%3E❤️%3C/text%3E%3C/svg%3E",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-384x384.png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 384'%3E%3Crect fill='%23FF6B3D' width='384' height='384' rx='96'/%3E%3Ctext x='192' y='260' font-size='200' text-anchor='middle' fill='white'%3E❤️%3C/text%3E%3C/svg%3E",
       "sizes": "384x384",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%23FF6B3D' width='512' height='512' rx='128'/%3E%3Ctext x='256' y='360' font-size='280' text-anchor='middle' fill='white'%3E❤️%3C/text%3E%3C/svg%3E",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/maskable-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icons/maskable-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "/screenshots/mobile-home-540x960.png",
-      "sizes": "540x960",
-      "type": "image/png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'%3E%3Crect fill='%23E8EFF5' width='540' height='720'/%3E%3Crect fill='%231E3A5F' width='540' height='120'/%3E%3Ctext x='270' y='75' font-size='32' text-anchor='middle' fill='white' font-weight='bold'%3ESeva%3C/text%3E%3Crect fill='white' x='20' y='160' width='500' height='120' rx='12'/%3E%3Ctext x='270' y='210' font-size='24' text-anchor='middle' fill='%231E3A5F'%3E🍽️ Food Donations%3C/text%3E%3Ctext x='270' y='245' font-size='16' text-anchor='middle' fill='%23666'%3EConnect & Share Food%3C/text%3E%3C/svg%3E",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
       "form_factor": "narrow",
-      "label": "Home screen showing active donations and rewards"
-    },
-    {
-      "src": "/screenshots/mobile-nearby-540x960.png",
-      "sizes": "540x960",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Browse nearby donations with real-time GPS tracking"
-    },
-    {
-      "src": "/screenshots/mobile-tracking-540x960.png",
-      "sizes": "540x960",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Track deliveries in real-time on interactive maps"
-    },
-    {
-      "src": "/screenshots/desktop-dashboard-1280x720.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Desktop dashboard with statistics and management"
-    },
-    {
-      "src": "/screenshots/desktop-map-1280x720.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Interactive map showing nearby donations and volunteers"
+      "label": "Home Screen"
     }
   ],
   "shortcuts": [
     {
       "name": "Create Donation",
       "short_name": "Donate",
-      "description": "Post a new food donation quickly",
+      "description": "Post a new food donation",
       "url": "/?action=create&source=shortcut",
       "icons": [
         {
-          "src": "/icons/icon-96x96.png",
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Ccircle fill='%234CAF50' cx='48' cy='48' r='48'/%3E%3Ctext x='48' y='68' font-size='48' text-anchor='middle' fill='white'%3E+%3C/text%3E%3C/svg%3E",
           "sizes": "96x96",
-          "type": "image/png"
+          "type": "image/svg+xml"
         }
       ]
     },
     {
-      "name": "View Nearby",
+      "name": "Nearby Donations",
       "short_name": "Nearby",
-      "description": "Browse donations near you",
+      "description": "View donations near you",
       "url": "/?tab=nearby&source=shortcut",
       "icons": [
         {
-          "src": "/icons/icon-96x96.png",
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Ccircle fill='%232196F3' cx='48' cy='48' r='48'/%3E%3Ctext x='48' y='68' font-size='48' text-anchor='middle' fill='white'%3E📍%3C/text%3E%3C/svg%3E",
           "sizes": "96x96",
-          "type": "image/png"
+          "type": "image/svg+xml"
         }
       ]
     },
     {
-      "name": "Track Deliveries",
+      "name": "Track Delivery",
       "short_name": "Track",
-      "description": "Track your active deliveries",
+      "description": "Track your deliveries",
       "url": "/?tab=tracking&source=shortcut",
       "icons": [
         {
-          "src": "/icons/icon-96x96.png",
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Ccircle fill='%23FF9800' cx='48' cy='48' r='48'/%3E%3Ctext x='48' y='68' font-size='48' text-anchor='middle' fill='white'%3E🚚%3C/text%3E%3C/svg%3E",
           "sizes": "96x96",
-          "type": "image/png"
+          "type": "image/svg+xml"
         }
       ]
     },
     {
-      "name": "History",
-      "short_name": "History",
-      "description": "View donation history",
-      "url": "/?tab=history&source=shortcut",
+      "name": "Community Feed",
+      "short_name": "Community",
+      "description": "View community posts",
+      "url": "/?tab=community&source=shortcut",
       "icons": [
         {
-          "src": "/icons/icon-96x96.png",
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Ccircle fill='%239C27B0' cx='48' cy='48' r='48'/%3E%3Ctext x='48' y='68' font-size='48' text-anchor='middle' fill='white'%3E🌟%3C/text%3E%3C/svg%3E",
           "sizes": "96x96",
-          "type": "image/png"
+          "type": "image/svg+xml"
         }
       ]
     }
   ],
   "share_target": {
     "action": "/share",
-    "method": "GET",
+    "method": "POST",
+    "enctype": "multipart/form-data",
     "params": {
       "title": "title",
       "text": "text",
-      "url": "url"
+      "url": "url",
+      "files": [
+        {
+          "name": "media",
+          "accept": ["image/*", "video/*"]
+        }
+      ]
     }
   },
-  "protocol_handlers": [
-    {
-      "protocol": "web+seva",
-      "url": "/?action=%s"
-    }
-  ]
+  "related_applications": [],
+  "iarc_rating_id": "",
+  "protocol_handlers": []
 }
