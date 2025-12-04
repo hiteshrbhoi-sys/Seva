@@ -2,31 +2,34 @@
 <html lang="en">
 <head>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-<meta content="#FF6B3D" name="theme-color"/>
-
-<!-- FAVICONS (RealFaviconGenerator) -->
 <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="shortcut icon" href="/favicon.ico" />
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-<link rel="manifest" href="/manifest.json">
-<link rel="manifest" href="/site.webmanifest">
+<link rel="manifest" href="/site.webmanifest" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<meta content="#FF6B3D" name="theme-color"/>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Seva">
 
+<!-- ✅ FIXED: Proper manifest link -->
+<link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
 
-<!-- ✅ IOS SPECIFIC META TAGS -->
+<!-- ✅ iOS SPECIFIC META TAGS -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Seva">
 
-<!-- ✅ MICROSOFT TILES -->
-<meta name="msapplication-TileColor" content="#1E3A5F">
-<meta name="msapplication-config" content="none">
+<!-- ✅ Inline Favicons (Works offline) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23FF6B3D' width='100' height='100' rx='20'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle' fill='white'%3E❤️%3C/text%3E%3C/svg%3E" />
+
 
 <title>Seva - Food Donation Platform</title>
+
 <!-- Rest of your existing <style> tags -->
 <style>
+
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #E8EFF5; }
     .hide { display: none !important; }
@@ -270,6 +273,380 @@
       color: #666;
     }
     
+/* ============================================
+   🌟 COMMUNITY FEED STYLES
+   ============================================ */
+
+/* Post Card */
+.post-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s;
+}
+
+.post-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+/* Post Header */
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.post-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.post-user-info {
+  flex: 1;
+}
+
+.post-user-name {
+  font-weight: 600;
+  color: #1E3A5F;
+  font-size: 15px;
+}
+
+.post-timestamp {
+  font-size: 12px;
+  color: #999;
+}
+
+/* Post Content */
+.post-content-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #333;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Media Gallery */
+.post-media-grid {
+  display: grid;
+  gap: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.post-media-grid.single {
+  grid-template-columns: 1fr;
+}
+
+.post-media-grid.double {
+  grid-template-columns: 1fr 1fr;
+}
+
+.post-media-grid.triple {
+  grid-template-columns: 2fr 1fr;
+}
+
+.post-media-grid.quad {
+  grid-template-columns: 1fr 1fr;
+}
+
+.post-media-item {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #f0f0f0;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.post-media-item:hover {
+  transform: scale(1.02);
+}
+
+.post-media-item img,
+.post-media-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.post-media-item.first {
+  grid-row: span 2;
+  aspect-ratio: auto;
+}
+
+.media-more-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 32px;
+  font-weight: 600;
+}
+
+/* Post Actions */
+.post-actions {
+  display: flex;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.post-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.post-action-btn:hover {
+  background: #f5f5f5;
+}
+
+.post-action-btn.liked {
+  color: #E91E63;
+}
+
+.post-action-btn .icon {
+  font-size: 20px;
+}
+
+/* Comments Section */
+.comments-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.comment-item {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: #f9f9f9;
+  border-radius: 12px;
+}
+
+.comment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-author {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1E3A5F;
+  margin-bottom: 2px;
+}
+
+.comment-text {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.4;
+}
+
+.comment-time {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* Comment Input */
+.comment-input-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.comment-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 20px;
+  outline: none;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.comment-input:focus {
+  border-color: #FF6B3D;
+}
+
+.comment-submit-btn {
+  padding: 10px 20px;
+  background: #FF6B3D;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.comment-submit-btn:hover {
+  background: #E85A2C;
+}
+
+/* Media Lightbox */
+.media-lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.media-lightbox img,
+.media-lightbox video {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: white;
+  color: #333;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Create Post Modal */
+.create-post-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.media-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.media-preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f0f0f0;
+}
+
+.media-preview-item img,
+.media-preview-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-preview-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.upload-progress {
+  background: #E3F2FD;
+  color: #1565C0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-progress .spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #1565C0;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .post-media-grid.triple,
+  .post-media-grid.quad {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .media-preview-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
 /* 🆕 Directions button styling */
     .directions-btn {
       background: #4285F4;
@@ -598,6 +975,105 @@
 <!-- Notification Container -->
 <div id="notification-container"></div>
 
+<!-- ============================================
+     🌟 COMMUNITY FEED MODALS
+     ============================================ -->
+
+<!-- Create Post Modal -->
+<div class="hide fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" id="create-post-modal">
+  <div class="bg-white rounded-2xl p-6 w-full max-w-lg create-post-modal">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold" style="color: #1E3A5F;">✨ Create Post</h2>
+      <button class="text-2xl text-gray-400" onclick="closeCreatePost()">×</button>
+    </div>
+    
+    <div class="space-y-4">
+      <!-- Post Content -->
+      <div>
+        <textarea 
+          id="post-content" 
+          class="w-full p-3 border-2 border-gray-200 rounded-xl outline-none resize-none" 
+          placeholder="Share your thoughts, stories, or updates with the community..."
+          rows="4"
+          maxlength="2000"
+        ></textarea>
+        <div class="text-xs text-gray-500 text-right mt-1">
+          <span id="post-char-count">0</span>/2000 characters
+        </div>
+      </div>
+      
+      <!-- Media Upload -->
+      <div>
+        <label class="block text-sm font-semibold mb-2">📸 Add Photos/Videos (Max 5)</label>
+        <input 
+          type="file" 
+          id="post-media-input" 
+          accept="image/*,video/*" 
+          multiple 
+          class="w-full p-3 border-2 border-gray-200 rounded-xl"
+          onchange="handleMediaSelection(this.files)"
+        />
+        <div class="text-xs text-gray-500 mt-1">
+          Supported: JPG, PNG, GIF, MP4, MOV (Max 10MB each)
+        </div>
+      </div>
+      
+      <!-- Media Preview -->
+      <div id="media-preview-container" class="hide">
+        <div class="text-sm font-semibold mb-2">Selected Media:</div>
+        <div id="media-preview-grid" class="media-preview-grid"></div>
+      </div>
+      
+      <!-- Upload Progress -->
+      <div id="upload-progress-container" class="hide">
+        <div class="upload-progress">
+          <div class="spinner"></div>
+          <span id="upload-progress-text">Uploading...</span>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="flex gap-3">
+        <button class="flex-1 btn-secondary" onclick="closeCreatePost()">Cancel</button>
+        <button class="flex-1 btn-primary" onclick="submitPost()" id="submit-post-btn">
+          📤 Post
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Comments Modal -->
+<div class="hide fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" id="comments-modal">
+  <div class="bg-white rounded-2xl p-6 w-full max-w-lg" style="max-height: 80vh; overflow-y: auto;">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold" style="color: #1E3A5F;">💬 Comments</h2>
+      <button class="text-2xl text-gray-400" onclick="closeCommentsModal()">×</button>
+    </div>
+    
+    <div id="comments-list"></div>
+    
+    <div class="comment-input-container sticky bottom-0 bg-white pt-4">
+      <input 
+        type="text" 
+        id="comment-input" 
+        class="comment-input" 
+        placeholder="Write a comment..."
+        onkeypress="if(event.key==='Enter') submitComment()"
+      />
+      <button class="comment-submit-btn" onclick="submitComment()">
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Media Lightbox -->
+<div class="hide media-lightbox" id="media-lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="event.stopPropagation(); closeLightbox()">×</button>
+  <div id="lightbox-content" onclick="event.stopPropagation()"></div>
+</div>
+
 <!-- Main App -->
 <div class="hide min-h-screen pb-20" id="main-app">
 <header class="p-4 sticky top-0 z-50 shadow-lg" style="background: #1E3A5F; color: white;">
@@ -644,6 +1120,10 @@
 <button class="flex-1 py-4 text-center tab-active relative" id="tab-home" onclick="showTab('home')">
 <div class="text-2xl mb-1">🏠</div>
 <div class="text-xs font-semibold">Home</div>
+</button>
+<button class="flex-1 py-4 text-center text-gray-600 relative" id="tab-community" onclick="showTab('community')">
+<div class="text-2xl mb-1">🌟</div>
+<div class="text-xs">Community</div>
 </button>
 <button class="flex-1 py-4 text-center text-gray-600 relative" id="tab-nearby" onclick="showTab('nearby')">
 <div class="text-2xl mb-1">📍</div>
@@ -775,7 +1255,20 @@
 </div>
 </div>
 
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- Tailwind CSS v3.4 via CDN (for prototype) -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: '#1E3A5F',
+          secondary: '#FF6B3D',
+        }
+      }
+    }
+  }
+</script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -800,8 +1293,12 @@
     let messageSubscriptions = [];
     let notificationSubscription = null;
     let deliverSelfMode = false;
-    let currentTab = 'home';
-    let nearbyRefreshInterval = null;
+   let currentTab = 'home';
+let nearbyRefreshInterval = null;
+let selectedMediaFiles = [];
+let currentViewingPostId = null;
+let postsSubscription = null;
+let currentPostFilter = 'recent';
     let donationsSubscription = null;
 let beneficiaryFoodPreferences = { veg: false, nonveg: false };
 let currentLiveLocation = null;
@@ -813,66 +1310,49 @@ let beneficiaryLoadInProgress = false;
 let lastExpiryUpdateTime = 0;
 const EXPIRY_UPDATE_THROTTLE = 1000; // 1 second
 
-// Initialize live location tracking
 // ============================================
-// 🗺️ ENHANCED MAP MANAGEMENT SYSTEM
+// 🗺️ ENHANCED MAP MANAGEMENT SYSTEM - FIXED
 // ============================================
 
-// Global map registry to track all active maps
 const activeMapRegistry = new Map();
 
 /**
  * Safe map cleanup with complete DOM reset
- * @param {L.Map} map - Leaflet map instance
- * @param {string} mapId - DOM element ID
- * @param {string} registryKey - Unique key for tracking
  */
-function safeMapCleanup(map, mapId, registryKey) {
+async function safeMapCleanup(map, mapId, registryKey) {
   if (!map) return Promise.resolve(true);
   
   return new Promise((resolve) => {
     try {
       console.log(`🧹 Cleaning up map: ${registryKey}`);
       
-      // Step 1: Stop all animations
+      // Stop all animations
       if (map.stop) map.stop();
       
-      // Step 2: Remove all event listeners
+      // Remove all event listeners
       map.off();
       
-      // Step 3: Clear all layers with error handling
+      // Clear all layers
       const layersToRemove = [];
-      map.eachLayer((layer) => {
-        layersToRemove.push(layer);
-      });
-      
+      map.eachLayer((layer) => layersToRemove.push(layer));
       layersToRemove.forEach(layer => {
-        try {
-          map.removeLayer(layer);
-        } catch(e) {
-          console.warn('Layer removal warning:', e);
-        }
+        try { map.removeLayer(layer); } catch(e) {}
       });
       
-      // Step 4: Remove map instance
+      // Remove map instance
       map.remove();
       
-      // Step 5: Clear DOM container completely
+      // Clear DOM container
       const container = document.getElementById(mapId);
       if (container) {
-        // Remove all Leaflet classes
         container.className = container.className.split(' ').filter(c => !c.startsWith('leaflet-')).join(' ');
         container.innerHTML = '';
-        
-        // Clear Leaflet internal properties
-        if (container._leaflet_id) {
-          delete container._leaflet_id;
-        }
+        delete container._leaflet_id;
         delete container._leaflet;
         delete container._leaflet_map;
       }
       
-      // Step 6: Remove from registry
+      // Remove from registry
       activeMapRegistry.delete(registryKey);
       
       console.log(`✅ Map cleaned: ${registryKey}`);
@@ -897,18 +1377,14 @@ function safeMapCleanup(map, mapId, registryKey) {
 
 /**
  * Initialize map with automatic cleanup management
- * @param {string} elementId - DOM element ID
- * @param {string} registryKey - Unique tracking key
- * @param {Object} options - Leaflet map options
- * @returns {L.Map|null} Map instance or null on failure
  */
 function safeMapInit(elementId, registryKey, options = {}) {
-  // Check if map already exists
+  // Check if map already exists and is valid
   if (activeMapRegistry.has(registryKey)) {
     const existing = activeMapRegistry.get(registryKey);
     if (existing && existing._container && existing._container.parentNode) {
       console.log(`♻️ Reusing existing map: ${registryKey}`);
-      existing.invalidateSize();
+      setTimeout(() => existing.invalidateSize(), 100);
       return existing;
     } else {
       console.warn(`⚠️ Stale map found, cleaning: ${registryKey}`);
@@ -925,9 +1401,7 @@ function safeMapInit(elementId, registryKey, options = {}) {
     
     // Clear any existing Leaflet data
     container.innerHTML = '';
-    if (container._leaflet_id) {
-      delete container._leaflet_id;
-    }
+    if (container._leaflet_id) delete container._leaflet_id;
     
     // Create new map
     const map = L.map(elementId, {
@@ -966,10 +1440,10 @@ async function cleanupAllMaps() {
   activeMapRegistry.clear();
   console.log('✅ All maps cleaned');
 }
-// ============================================
-// ENHANCED GPS LOCATION TRACKING WITH BETTER ERROR HANDLING
-// ============================================
 
+// ============================================
+// ENHANCED GPS LOCATION TRACKING - FIXED
+// ============================================
 
 function startLiveLocationTracking() {
   if (!navigator.geolocation) {
@@ -1042,7 +1516,6 @@ function startLiveLocationTracking() {
         if (distanceMoved < 0.01 && useHighAccuracy && timeSinceLastUpdate > 60000) {
           useHighAccuracy = false;
           console.log('🔋 Switching to low accuracy mode (stationary)');
-          // Restart with new settings
           stopLiveLocationTracking();
           setTimeout(() => startLiveLocationTracking(), 1000);
           return;
@@ -1321,9 +1794,9 @@ function openGoogleMapsDirections(fromLat, fromLng, toLat, toLng, label = 'desti
    
 
   
+
 // ============================================
-// EXPIRY TIME VALIDATION - SINGLE SOURCE OF TRUTH
-// Replace lines ~1050-1180
+// EXPIRY TIME VALIDATION - FIXED
 // ============================================
 
 function setMinimumExpiryTime() {
@@ -2177,13 +2650,13 @@ function attachWindowUnloadHandler() {
   windowBeforeUnloadAttached = true;
 }
 // ============================================
-// ENHANCED WINDOW.ONLOAD WITH PWA SUPPORT
+// ENHANCED WINDOW.ONLOAD - FIXED
 // ============================================
 
 window.onload = async () => {
   console.log('🚀 Seva App Loading...');
   
-  // Initialize notifications and service worker
+  // Initialize notifications and service worker ONCE
   await initializeNotifications();
   
   // Setup phone validation
@@ -2199,7 +2672,7 @@ window.onload = async () => {
   
   // Check network status
   if (!navigator.onLine) {
-    console.log('📵 Starting in offline mode');
+    console.log('🔵 Starting in offline mode');
     setTimeout(() => {
       showNotification(
         'Offline Mode',
@@ -2215,7 +2688,7 @@ window.onload = async () => {
   const tab = urlParams.get('tab');
   const source = urlParams.get('source');
   
-  console.log('📍 URL params:', { action, tab, source });
+  console.log('🔍 URL params:', { action, tab, source });
   
   // Load saved user session
   const savedUserId = window.localStorage.getItem('seva_user_id');
@@ -2226,7 +2699,7 @@ window.onload = async () => {
       await subscribeToNotifications();
       
       // Handle deep link navigation
-      if (tab && ['home', 'nearby', 'tracking', 'history'].includes(tab)) {
+      if (tab && ['home', 'nearby', 'tracking', 'history', 'community'].includes(tab)) {
         setTimeout(() => showTab(tab), 500);
       }
       
@@ -2590,11 +3063,18 @@ async function logout() {
       donationsSubscription = null;
     }
     
-    if (chatSubscription) {
+if (chatSubscription) {
       unsubscribePromises.push(
         chatSubscription.unsubscribe().catch(e => console.error('Chat unsub error:', e))
       );
       chatSubscription = null;
+    }
+    
+    if (postsSubscription) {
+      unsubscribePromises.push(
+        postsSubscription.unsubscribe().catch(e => console.error('Posts unsub error:', e))
+      );
+      postsSubscription = null;
     }
     
     await Promise.race([
@@ -2656,10 +3136,6 @@ async function logout() {
     }
 
 
-// ============================================
-// ENHANCED TAB SWITCHING WITH COMPLETE CLEANUP
-// ============================================
-
 async function showTab(tab) {
   const previousTab = currentTab;
   
@@ -2687,49 +3163,19 @@ async function showTab(tab) {
   // ============================================
   // PHASE 2: Clean up ALL maps using registry
   // ============================================
-  const cleanupPromises = [];
+  await cleanupAllMaps();
   
-  if (Object.keys(trackingMaps).length > 0) {
-    console.log(`🧹 Cleaning up ${Object.keys(trackingMaps).length} tracking maps`);
-    Object.keys(trackingMaps).forEach(mapId => {
-      const promise = safeMapCleanup(trackingMaps[mapId], mapId, `tracking-${mapId}`);
-      cleanupPromises.push(promise);
-      delete trackingMaps[mapId];
-    });
-  }
-  
-  if (locationMap) {
-    cleanupPromises.push(
-      safeMapCleanup(locationMap, 'location-map', 'location-picker-map')
-    );
-    locationMap = null;
-    locationMarker = null;
-    selectedLocation = null;
-  }
-  
-  if (inlinePickupMap) {
-    cleanupPromises.push(
-      safeMapCleanup(inlinePickupMap, 'inline-pickup-map', 'inline-pickup-map')
-    );
-    inlinePickupMap = null;
-    inlinePickupMarker = null;
-    selectedPickupLocation = null;
-    
-    const mapContainer = document.getElementById('inline-pickup-map-container');
-    if (mapContainer) mapContainer.classList.add('hide');
-  }
-  
-  // Wait for all cleanup to complete
-  await Promise.allSettled(cleanupPromises);
+  // Reset all map references
+  trackingMaps = {};
+  locationMap = null;
+  locationMarker = null;
+  inlinePickupMap = null;
+  inlinePickupMarker = null;
+  selectedLocation = null;
+  selectedPickupLocation = null;
   
   // Additional safety delay
   await new Promise(resolve => setTimeout(resolve, 100));
-  
-  // Verify cleanup
-  if (Object.keys(trackingMaps).length > 0) {
-    console.warn('⚠️ Tracking maps still exist, forcing removal');
-    trackingMaps = {};
-  }
   
   // ============================================
   // PHASE 3: Update tab UI
@@ -2759,6 +3205,8 @@ async function showTab(tab) {
         startLiveLocationTracking();
       }
       await loadNearbyContent();
+    } else if (tab === 'community') {
+      await safeLoadCommunityContent();
     } else if (tab === 'tracking') {
       await loadTrackingContent();
     } else if (tab === 'history') {
@@ -2792,41 +3240,9 @@ async function showTab(tab) {
   }
 }
 
-// ✅ FIXED: Update confirmLocation to properly display address
-// ✅ FIXED: Update confirmLocation to properly display address with styling
-function confirmLocation() {
-  if (!selectedLocation) {
-    alert('Please select a location first by clicking on the map or using "Use Current Location".');
-    return;
-  }
 
-  const { lat, lng, address } = selectedLocation;
-  
-  if (locationModalType === 'registration') {
-    document.getElementById('reg-lat').value = lat;
-    document.getElementById('reg-lng').value = lng;
-    document.getElementById('reg-address').value = address;
-    
-    // ✅ FIX: Properly update the location button text with address AND styling
-    const locationTextBtn = document.getElementById('location-text');
-    if (locationTextBtn) {
-      locationTextBtn.textContent = `📍 ${address}`;
-      locationTextBtn.style.color = '#4CAF50';
-      locationTextBtn.style.fontWeight = '600';
-    }
-    
-    console.log('✅ Location confirmed for registration:', address);
-  }
-  
-  closeLocationPicker();
-}
-// ============================================
-// REMAINING FUNCTIONS FOR SEVA PLATFORM
-// Add these after reverseGeocode() function in your HTML file
-// Replace the comment section that says "IMPORTANT: Due to character limits..."
-// ============================================
 
-// HOME CONTENT FUNCTIONS
+
 function loadHomeContent() {
   const content = document.getElementById('content-area');
 
@@ -3037,16 +3453,7 @@ async function loadBeneficiaryDeliveries() {
   updateChatNotifications();
 }
 
-// NEARBY CONTENT FUNCTIONS
-// ============================================
-// SECTION 2: ENHANCED NEARBY FUNCTIONS WITH REAL-TIME GPS
-// REPLACE all loadNearby* functions (around line 1400-1700)
-// ============================================
 
-// Enhanced loadNearbyContent with real-time location
-// ============================================
-// NEARBY CONTENT FUNCTIONS - COMPLETE VERIFIED VERSION
-// ============================================
 
 async function loadNearbyContent() {
   const content = document.getElementById('content-area');
@@ -3096,16 +3503,25 @@ async function loadNearbyContent() {
     `;
     await loadNearbyDonations(location);
     
-    // Auto-refresh every 15 seconds
-    if (nearbyRefreshInterval) clearInterval(nearbyRefreshInterval);
-    nearbyRefreshInterval = setInterval(async () => {
-      if (currentTab === 'nearby') {
-        const currentLoc = getCurrentLocation();
-        if (currentLoc) {
-          await loadNearbyDonations(currentLoc);
-        }
+// Auto-refresh every 15 seconds with throttling
+if (nearbyRefreshInterval) clearInterval(nearbyRefreshInterval);
+
+let isRefreshing = false;
+nearbyRefreshInterval = setInterval(async () => {
+  if (currentTab === 'nearby' && !isRefreshing) {
+    isRefreshing = true;
+    try {
+      const currentLoc = getCurrentLocation();
+      if (currentLoc) {
+        await loadNearbyDonations(currentLoc);
       }
-    }, 15000);
+    } finally {
+      setTimeout(() => {
+        isRefreshing = false;
+      }, 1000);
+    }
+  }
+}, 15000);
     
   } else if (currentUser.role === 'donor') {
     content.innerHTML = `
@@ -3230,12 +3646,12 @@ async function loadNearbyDonations(location) {
     const beneficiaryLat = d.beneficiaries?.users?.location_lat;
     const beneficiaryLng = d.beneficiaries?.users?.location_lng;
     
-    return `
+return `
     <div class="card">
       <div class="flex justify-between items-start mb-2">
         <div>
           <h4 class="font-bold text-lg">${escapeHtml(d.food_type || '')}</h4>
-          <span class="distance-badge">📍 ${formatDistance(d.distance)} away</span>
+          <span class="distance-badge">🎯 ${formatDistance(d.distance)} away</span>
         </div>
         <span class="${d.is_veg ? 'badge badge-veg' : 'badge badge-nonveg'}">${d.is_veg ? '🥬 Veg' : '🍗 Non-Veg'}</span>
       </div>
@@ -3244,7 +3660,7 @@ async function loadNearbyDonations(location) {
       <p class="text-sm text-blue-600 mb-2">👤 ${escapeHtml(d.donors?.full_name || '')} • ${escapeHtml(d.donors?.phone || '')}</p>
       ${d.beneficiaries ? `<p class="text-sm text-purple-600 mb-2">🏠 To: ${escapeHtml(d.beneficiaries.users.full_name || '')}</p>` : ''}
       
-   <!-- 🆕 Directions and Call Buttons -->
+      <!-- 🆕 Directions and Call Buttons -->
       <div class="flex gap-2 mb-2">
         ${donorLat && donorLng ? `
           <button 
@@ -3324,21 +3740,21 @@ async function loadNearbyVolunteers(location) {
     return;
   }
 
-  container.innerHTML = sortedData.map(v => {
+container.innerHTML = sortedData.map(v => {
     const unread = unreadMessages[v.id] || 0;
     return `
     <div class="card">
       <div class="flex justify-between items-start">
         <div>
           <h4 class="font-bold">${escapeHtml(v.full_name || '')}</h4>
-          <span class="distance-badge">📍 ${formatDistance(v.distance)}</span>
+          <span class="distance-badge">🎯 ${formatDistance(v.distance)}</span>
           <p class="text-sm text-gray-600 mt-1">🚚 Volunteer</p>
           <p class="text-sm text-blue-600">📞 ${escapeHtml(v.phone || 'N/A')}</p>
         </div>
         <div class="text-3xl">🚚</div>
       </div>
       
-<!-- 🆕 Directions and Call Buttons -->
+      <!-- 🆕 Directions and Call Buttons -->
       ${v.location_lat && v.location_lng ? `
         <button 
           onclick="openGoogleMapsDirections(${location.lat}, ${location.lng}, ${v.location_lat}, ${v.location_lng}, '${escapeHtml(v.full_name || 'volunteer')}')" 
@@ -3400,21 +3816,21 @@ async function loadNearbyBeneficiaries(location) {
     return;
   }
 
-  container.innerHTML = sortedData.map(b => {
+ container.innerHTML = sortedData.map(b => {
     const unread = unreadMessages[b.users.id] || 0;
     return `
     <div class="card">
       <div class="flex justify-between items-start">
         <div>
           <h4 class="font-bold">${escapeHtml(b.organization_name || b.users.full_name || '')}</h4>
-          <span class="distance-badge">📍 ${formatDistance(b.distance)}</span>
+          <span class="distance-badge">🎯 ${formatDistance(b.distance)}</span>
           <p class="text-sm text-gray-600 mt-1">🏠 ${escapeHtml(b.beneficiary_type || '')}</p>
           <p class="text-sm text-blue-600">📞 ${escapeHtml(b.users.phone || 'N/A')}</p>
         </div>
         <div class="text-3xl">🏠</div>
       </div>
       
-<!-- 🆕 Directions and Call Buttons -->
+      <!-- 🆕 Directions and Call Buttons -->
       ${b.users.location_lat && b.users.location_lng ? `
         <button 
           onclick="openGoogleMapsDirections(${location.lat}, ${location.lng}, ${b.users.location_lat}, ${b.users.location_lng}, '${escapeHtml(b.organization_name || b.users.full_name || 'beneficiary')}')" 
@@ -3486,11 +3902,11 @@ async function loadNearbyDonationsForBeneficiary(location) {
     return `
     <div class="card">
       <h4 class="font-bold text-lg mb-2">${escapeHtml(d.food_type || '')}</h4>
-      <span class="distance-badge">📍 ${formatDistance(d.distance)} away</span>
+      <span class="distance-badge">🎯 ${formatDistance(d.distance)} away</span>
       <p class="text-sm text-gray-600 mt-2">📦 ${d.quantity} ${d.unit}</p>
       <p class="text-sm text-blue-600">👤 From: ${escapeHtml(d.donors?.full_name || '')}</p>
       
-<!-- 🆕 Directions and Call Buttons -->
+      <!-- 🆕 Directions and Call Buttons -->
       ${d.donorLat && d.donorLng ? `
         <button 
           onclick="openGoogleMapsDirections(${location.lat}, ${location.lng}, ${d.donorLat}, ${d.donorLng}, 'donor location')" 
@@ -3553,16 +3969,16 @@ async function loadNearbyVolunteersForBeneficiary(location) {
     return;
   }
 
-  container.innerHTML = sortedData.map(v => {
+container.innerHTML = sortedData.map(v => {
     const unread = unreadMessages[v.id] || 0;
     return `
     <div class="card">
       <h4 class="font-bold">${escapeHtml(v.full_name || '')}</h4>
-      <span class="distance-badge">📍 ${formatDistance(v.distance)}</span>
+      <span class="distance-badge">🎯 ${formatDistance(v.distance)}</span>
       <p class="text-sm text-gray-600 mt-1">🚚 Volunteer</p>
       <p class="text-sm text-blue-600">📞 ${escapeHtml(v.phone || 'N/A')}</p>
       
-<!-- 🆕 Directions and Call Buttons -->
+      <!-- 🆕 Directions and Call Buttons -->
       ${v.location_lat && v.location_lng ? `
         <button 
           onclick="openGoogleMapsDirections(${location.lat}, ${location.lng}, ${v.location_lat}, ${v.location_lng}, '${escapeHtml(v.full_name || 'volunteer')}')" 
@@ -3587,20 +4003,14 @@ async function loadNearbyVolunteersForBeneficiary(location) {
   updateChatNotifications();
 }
 
-// ============================================
-// END OF NEARBY FUNCTIONS
-// ============================================
-
-// DONATION MANAGEMENT FUNCTIONS
-// ✅ ADD THIS CHECK at the START of showCreateDonation() function
-// Around line 1900
 
 function showCreateDonation() {
-  // **ENHANCED: Smart beneficiary refresh**
+  // ✅ CRITICAL: Throttle beneficiary loading
   const location = getCurrentLocation();
+  const shouldLoad = !beneficiaryLoadInProgress && 
+                     (!lastBeneficiaryRefreshLocation || shouldRefreshBeneficiaries());
   
-  // ✅ CRITICAL: Only refresh if not already loading
-  if (location && shouldRefreshBeneficiaries() && !beneficiaryLoadInProgress) {
+  if (location && shouldLoad) {
     console.log('🔄 Refreshing beneficiary list (location changed)');
     lastBeneficiaryRefreshLocation = { ...location };
     populateBeneficiarySelect();
@@ -3612,7 +4022,6 @@ function showCreateDonation() {
   setMinimumExpiryTime();
   
   document.getElementById('create-modal').classList.remove('hide');
-  
   
   if (currentUser && (currentUser.role === 'donor' || currentUser.role === 'volunteer')) {
     document.getElementById('deliver-self-container').classList.remove('hide');
@@ -3630,6 +4039,7 @@ function showCreateDonation() {
   document.getElementById('pickup-lat').value = '';
   document.getElementById('pickup-lng').value = '';
 }
+  
 function hideCreateDonation() {
   console.log('🚪 Closing create donation modal...');
   
@@ -3646,6 +4056,16 @@ function hideCreateDonation() {
       console.log('🧹 Cleared expiry validation interval:', intervalId);
       delete expiryInput.dataset.updateInterval;
     }
+    
+    // Remove all event listeners by cloning
+    const newExpiryInput = expiryInput.cloneNode(true);
+    newExpiryInput.value = '';
+    newExpiryInput.removeAttribute('min');
+    newExpiryInput.removeAttribute('data-update-interval');
+    newExpiryInput.setCustomValidity('');
+    newExpiryInput.classList.remove('invalid-time', 'valid-time');
+    expiryInput.parentNode.replaceChild(newExpiryInput, expiryInput);
+    console.log('♻️ Expiry input reset and event listeners removed');
   }
   
   // ============================================
@@ -3655,21 +4075,10 @@ function hideCreateDonation() {
   const mapElement = document.getElementById('inline-pickup-map');
   
   if (inlinePickupMap) {
-    try {
-      console.log('🗺️ Removing inline pickup map...');
-      inlinePickupMap.off();
-      inlinePickupMap.remove();
-      inlinePickupMap = null;
-      inlinePickupMarker = null;
-      selectedPickupLocation = null;
-      console.log('✅ Inline pickup map cleaned up');
-    } catch(e) {
-      console.error('❌ Error cleaning up inline pickup map:', e);
-      // Force cleanup
-      inlinePickupMap = null;
-      inlinePickupMarker = null;
-      selectedPickupLocation = null;
-    }
+    safeMapCleanup(inlinePickupMap, 'inline-pickup-map', 'inline-pickup-map');
+    inlinePickupMap = null;
+    inlinePickupMarker = null;
+    selectedPickupLocation = null;
   }
   
   window.inlineMapInitializing = false;
@@ -3701,24 +4110,7 @@ function hideCreateDonation() {
   if (vegRadio) vegRadio.checked = true;
   
   // ============================================
-  // PHASE 4: Complete expiry input cleanup
-  // ============================================
-  if (expiryInput) {
-    const newExpiryInput = expiryInput.cloneNode(true);
-    newExpiryInput.value = '';
-    newExpiryInput.removeAttribute('min');
-    newExpiryInput.removeAttribute('data-update-interval');
-    newExpiryInput.setCustomValidity('');
-    newExpiryInput.classList.remove('invalid-time', 'valid-time');
-    newExpiryInput.style.borderColor = '';
-    newExpiryInput.style.backgroundColor = '';
-    
-    expiryInput.parentNode.replaceChild(newExpiryInput, expiryInput);
-    console.log('♻️ Expiry input reset and event listeners removed');
-  }
-  
-  // ============================================
-  // PHASE 5: Reset pickup method buttons
+  // PHASE 4: Reset pickup method buttons
   // ============================================
   document.querySelectorAll('.pickup-btn').forEach(btn => {
     btn.classList.remove('selected');
@@ -3726,10 +4118,6 @@ function hideCreateDonation() {
   
   console.log('✅ Create donation modal fully cleaned up');
 }
-function toggleDeliverSelf() {
-  deliverSelfMode = document.getElementById('deliver-self-checkbox').checked;
-}
-
 
 
 async function populateBeneficiarySelect() {
@@ -3943,10 +4331,9 @@ if (submitBtn) {
   submitBtn.disabled = true;
   submitBtn.style.opacity = '0.6';
   submitBtn.style.cursor = 'not-allowed';
-  // ✅ ADD THIS LINE for loading spinner:
   submitBtn.innerHTML = '<span style="display: inline-block; width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px;"></span>Posting...';
   
-  // ✨ NEW: Disable entire form during submission
+  // Disable entire form during submission
   const formInputs = document.querySelectorAll('#create-modal input, #create-modal select, #create-modal textarea, #create-modal button:not([onclick="submitDonation()"])');
   formInputs.forEach(input => {
     input.disabled = true;
@@ -5289,55 +5676,22 @@ function closeLocationPicker() {
   
   document.getElementById('location-modal').classList.add('hide');
   
-  // ============================================
   // Complete cleanup of location map
-  // ============================================
   if (locationMap) {
-    try {
-      console.log('🗺️ Cleaning up location map...');
-      
-      // Step 1: Remove all event listeners
-      locationMap.off();
-      
-      // Step 2: Remove all markers
-      if (locationMarker) {
-        try {
-          locationMap.removeLayer(locationMarker);
-        } catch(e) {
-          console.warn('Marker already removed');
-        }
-      }
-      
-      // Step 3: Destroy map instance
-      locationMap.remove();
-      
-      // Step 4: Clear references
-      locationMap = null;
-      locationMarker = null;
-      selectedLocation = null;
-      
-      console.log('✅ Location map cleaned up successfully');
-    } catch(e) {
-      console.error('❌ Error cleaning up location map:', e);
-      // Force cleanup even if error occurs
-      locationMap = null;
-      locationMarker = null;
-      selectedLocation = null;
-    }
+    safeMapCleanup(locationMap, 'location-map', 'location-picker-map');
+    locationMap = null;
+    locationMarker = null;
+    selectedLocation = null;
   }
   
-  // ============================================
-  // Clear map container HTML to prevent ghost elements
-  // ============================================
+  // Clear map container HTML
   const mapElement = document.getElementById('location-map');
   if (mapElement) {
     mapElement.innerHTML = '';
-    mapElement.style.height = '300px'; // Reset height
+    mapElement.style.height = '300px';
   }
   
-  // ============================================
   // Reset UI elements
-  // ============================================
   const confirmBtn = document.getElementById('confirm-location-btn');
   if (confirmBtn) {
     confirmBtn.disabled = true;
@@ -5352,9 +5706,6 @@ function closeLocationPicker() {
   
   console.log('✅ Location picker modal fully closed and cleaned');
 }
-// ============================================
-// 🗺️ LOCATION PICKER MAP - COMPLETE REPLACEMENT
-// ============================================
 
 function initLocationMap() {
   const mapElement = document.getElementById('location-map');
@@ -5636,21 +5987,38 @@ function closeDeliveryModal() {
   document.getElementById('people-served').value = '';
 }
 
-
-
 // ============================================
-// ENHANCED SERVICE WORKER REGISTRATION
+// ENHANCED SERVICE WORKER REGISTRATION - FIXED
 // ============================================
 
-// Enhanced Service Worker Registration with Update Detection
+let serviceWorkerRegistered = false;
+
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) {
     console.log('❌ Service workers not supported');
     return null;
   }
 
+  // ✅ Prevent multiple registrations
+  if (serviceWorkerRegistered) {
+    console.log('✅ Service Worker already registered');
+    return serviceWorkerRegistration;
+  }
+
   try {
     console.log('📄 Registering service worker...');
+    
+    // Get existing registration
+    const existingReg = await navigator.serviceWorker.getRegistration('/');
+    if (existingReg) {
+      console.log('✅ Using existing Service Worker registration');
+      serviceWorkerRegistration = existingReg;
+      serviceWorkerRegistered = true;
+      setupServiceWorkerListeners(existingReg);
+      return existingReg;
+    }
+    
+    // Register new service worker
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/',
       updateViaCache: 'none'
@@ -5658,47 +6026,9 @@ async function registerServiceWorker() {
     
     console.log('✅ Service Worker registered:', registration.scope);
     serviceWorkerRegistration = registration;
+    serviceWorkerRegistered = true;
     
-    // Check for updates every 60 seconds
-    setInterval(() => {
-      registration.update();
-    }, 60000);
-    
-    // Handle updates
-    registration.addEventListener('updatefound', () => {
-      const newWorker = registration.installing;
-      console.log('🔄 Service Worker update found');
-      
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          console.log('🆕 New Service Worker available');
-          showUpdateNotification(registration);
-        }
-      });
-    });
-    
-    // Listen for controller change
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      console.log('🔄 Controller changed, reloading...');
-      window.location.reload();
-    });
-    
-    // Listen for messages from SW
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      console.log('📨 Message from SW:', event.data);
-      
-      if (event.data.type === 'SW_UPDATED') {
-        showUpdateNotification(registration);
-      } else if (event.data.type === 'SYNC_DONATIONS') {
-        if (currentUser && currentTab === 'home') {
-          loadHomeContent();
-        }
-      } else if (event.data.type === 'SYNC_MESSAGES') {
-        if (currentUser) {
-          loadUnreadMessages();
-        }
-      }
-    });
+    setupServiceWorkerListeners(registration);
     
     await navigator.serviceWorker.ready;
     console.log('✅ Service Worker is ready');
@@ -5708,6 +6038,49 @@ async function registerServiceWorker() {
     console.error('❌ Service Worker registration failed:', error);
     return null;
   }
+}
+
+function setupServiceWorkerListeners(registration) {
+  // Check for updates every 60 seconds
+  setInterval(() => {
+    registration.update();
+  }, 60000);
+  
+  // Handle updates
+  registration.addEventListener('updatefound', () => {
+    const newWorker = registration.installing;
+    console.log('🔄 Service Worker update found');
+    
+    newWorker.addEventListener('statechange', () => {
+      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+        console.log('🆕 New Service Worker available');
+        showUpdateNotification(registration);
+      }
+    });
+  });
+  
+  // Listen for controller change
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('🔄 Controller changed, reloading...');
+    window.location.reload();
+  });
+  
+  // Listen for messages from SW
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    console.log('📨 Message from SW:', event.data);
+    
+    if (event.data.type === 'SW_UPDATED') {
+      showUpdateNotification(registration);
+    } else if (event.data.type === 'SYNC_DONATIONS') {
+      if (currentUser && currentTab === 'home') {
+        loadHomeContent();
+      }
+    } else if (event.data.type === 'SYNC_MESSAGES') {
+      if (currentUser) {
+        loadUnreadMessages();
+      }
+    }
+  });
 }
 
 // Show update notification to user
@@ -5778,6 +6151,634 @@ window.dismissUpdate = function() {
     setTimeout(() => banner.remove(), 300);
   }
 };
+
+
+
+
+// Error boundary wrapper for community feed
+async function safeLoadCommunityContent() {
+  try {
+    await loadCommunityContent();
+  } catch (error) {
+    console.error('❌ Critical error loading community:', error);
+    const content = document.getElementById('content-area');
+    if (content) {
+      content.innerHTML = `
+        <div class="card text-center">
+          <div class="text-red-600 mb-2">⚠️ Community Feed Error</div>
+          <p class="text-sm text-gray-600">${escapeHtml(error.message || 'Failed to load community feed')}</p>
+          <button onclick="safeLoadCommunityContent()" class="btn-primary mt-4" style="width: auto;">
+            🔄 Retry
+          </button>
+        </div>
+      `;
+    }
+  }
+}
+async function loadCommunityContent() {
+  const content = document.getElementById('content-area');
+  
+  if (!currentUser) {
+    content.innerHTML = '<div class="card text-center">Please login to see the community feed.</div>';
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="mb-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold" style="color: #1E3A5F;">🌟 Community Feed</h3>
+        <button onclick="showCreatePost()" class="btn-primary" style="width: auto; padding: 10px 20px;">
+          ✨ Create Post
+        </button>
+      </div>
+      
+      <!-- Filter Tabs -->
+      <div class="flex gap-2 mb-4 overflow-x-auto" style="scrollbar-width: none;">
+        <button onclick="filterPosts('recent')" id="filter-recent" class="px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap" style="background: #FF6B3D; color: white;">
+          🔥 Recent
+        </button>
+        <button onclick="filterPosts('popular')" id="filter-popular" class="px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap" style="background: #E0E0E0; color: #666;">
+          ⭐ Popular
+        </button>
+        <button onclick="filterPosts('my_posts')" id="filter-my_posts" class="px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap" style="background: #E0E0E0; color: #666;">
+          👤 My Posts
+        </button>
+      </div>
+    </div>
+    
+    <div id="posts-feed"></div>
+    
+    <div id="posts-loading" class="hide text-center py-8">
+      <div class="loading-spinner" style="margin: 0 auto;"></div>
+      <p class="text-gray-600 mt-2">Loading posts...</p>
+    </div>
+  `;
+
+  await loadPosts('recent');
+  subscribeToPostUpdates();
+}
+
+async function filterPosts(filter) {
+  currentPostFilter = filter;
+  
+  ['recent', 'popular', 'my_posts'].forEach(f => {
+    const btn = document.getElementById(`filter-${f}`);
+    if (btn) {
+      if (f === filter) {
+        btn.style.background = '#FF6B3D';
+        btn.style.color = 'white';
+      } else {
+        btn.style.background = '#E0E0E0';
+        btn.style.color = '#666';
+      }
+    }
+  });
+  
+  await loadPosts(filter);
+}
+
+async function loadPosts(filter = 'recent') {
+  const container = document.getElementById('posts-feed');
+  const loading = document.getElementById('posts-loading');
+  
+  if (!container) return;
+  
+  loading?.classList.remove('hide');
+  container.innerHTML = '';
+
+  try {
+    let query = supabase
+      .from('posts')
+      .select(`
+        *,
+        users (id, full_name, role),
+        post_likes (user_id)
+      `)
+      .eq('is_active', true);
+
+    if (filter === 'my_posts') {
+      query = query.eq('user_id', currentUser.id);
+    } else if (filter === 'popular') {
+      query = query.order('likes_count', { ascending: false });
+    } else {
+      query = query.order('created_at', { ascending: false });
+    }
+
+    const { data: posts, error } = await query.limit(50);
+
+    if (error) {
+      console.error('❌ Load posts error:', error);
+      throw error;
+    }
+
+    loading?.classList.add('hide');
+
+    if (!posts || posts.length === 0) {
+      container.innerHTML = `
+        <div class="card text-center" style="padding: 60px 20px;">
+          <div class="text-6xl mb-4">📱</div>
+          <h3 class="text-xl font-bold mb-2" style="color: #1E3A5F;">No Posts Yet</h3>
+          <p class="text-gray-600 mb-4">Be the first to share something with the community!</p>
+          <button onclick="showCreatePost()" class="btn-primary" style="width: auto; padding: 12px 32px;">
+            ✨ Create First Post
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = posts.map(post => createPostHTML(post)).join('');
+
+  } catch (error) {
+    console.error('Error loading posts:', error);
+    loading?.classList.add('hide');
+    container.innerHTML = `
+      <div class="card text-center" style="color: #C62828;">
+        <div class="text-4xl mb-2">⚠️</div>
+        <div class="font-semibold">Failed to load posts</div>
+        <p class="text-sm text-gray-600 mt-2">${escapeHtml(error.message || 'Unknown error')}</p>
+        <button onclick="loadPosts('${filter}')" class="btn-primary mt-4" style="width: auto;">
+          🔄 Retry
+        </button>
+      </div>
+    `;
+  }
+}
+
+function createPostHTML(post) {
+  const isLiked = post.post_likes?.some(like => like.user_id === currentUser.id) || false;
+  const userInitial = post.users?.full_name?.charAt(0).toUpperCase() || '👤';
+  const timeAgo = getTimeAgo(post.created_at);
+  
+  let mediaHTML = '';
+  if (post.media_urls && post.media_urls.length > 0) {
+    const mediaCount = post.media_urls.length;
+    const gridClass = mediaCount === 1 ? 'single' : 
+                      mediaCount === 2 ? 'double' : 
+                      mediaCount === 3 ? 'triple' : 'quad';
+    
+    mediaHTML = `<div class="post-media-grid ${gridClass}">`;
+    
+    post.media_urls.forEach((url, index) => {
+      if (index < 4) {
+        const mediaType = post.media_types?.[index] || 'image';
+        const itemClass = index === 0 && mediaCount === 3 ? 'post-media-item first' : 'post-media-item';
+        
+        mediaHTML += `
+          <div class="${itemClass}" onclick="openMediaLightbox('${escapeHtml(url)}', '${mediaType}')">
+            ${mediaType === 'video' ? 
+              `<video src="${escapeHtml(url)}" style="pointer-events: none;"></video>` :
+              `<img src="${escapeHtml(url)}" alt="Post media" />`
+            }
+            ${index === 3 && mediaCount > 4 ? 
+              `<div class="media-more-overlay">+${mediaCount - 4}</div>` : 
+              ''
+            }
+          </div>
+        `;
+      }
+    });
+    
+    mediaHTML += '</div>';
+  }
+
+  return `
+    <div class="post-card" data-post-id="${post.id}">
+      <div class="post-header">
+        <div class="post-avatar">${userInitial}</div>
+        <div class="post-user-info">
+          <div class="post-user-name">${escapeHtml(post.users?.full_name || 'User')}</div>
+          <div class="post-timestamp">${timeAgo}</div>
+        </div>
+        ${post.user_id === currentUser.id ? `
+          <button onclick="deletePost('${post.id}')" class="text-gray-400 hover:text-red-600" title="Delete post">
+            🗑️
+          </button>
+        ` : ''}
+      </div>
+      ${post.content ? `
+        <div class="post-content-text">${escapeHtml(post.content)}</div>
+      ` : ''}
+      ${mediaHTML}
+      <div class="post-actions">
+        <button 
+          class="post-action-btn ${isLiked ? 'liked' : ''}" 
+          onclick="toggleLike('${post.id}')"
+          data-post-id="${post.id}"
+        >
+          <span class="icon">${isLiked ? '❤️' : '🤍'}</span>
+          <span class="count">${post.likes_count || 0}</span>
+        </button>
+        <button class="post-action-btn" onclick="openComments('${post.id}')">
+          <span class="icon">💬</span>
+          <span class="count">${post.comments_count || 0}</span>
+        </button>
+        <button class="post-action-btn" onclick="sharePost('${post.id}')">
+          <span class="icon">🔗</span>
+          <span>Share</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function showCreatePost() {
+  selectedMediaFiles = [];
+  document.getElementById('post-content').value = '';
+  document.getElementById('post-char-count').textContent = '0';
+  document.getElementById('post-media-input').value = '';
+  document.getElementById('media-preview-container').classList.add('hide');
+  document.getElementById('upload-progress-container').classList.add('hide');
+  document.getElementById('create-post-modal').classList.remove('hide');
+}
+
+function closeCreatePost() {
+  document.getElementById('create-post-modal').classList.add('hide');
+  selectedMediaFiles = [];
+}
+
+function handleMediaSelection(files) {
+  const maxFiles = 5;
+  const maxSize = 10 * 1024 * 1024;
+  
+  selectedMediaFiles = Array.from(files).slice(0, maxFiles);
+  
+  const oversizedFiles = selectedMediaFiles.filter(f => f.size > maxSize);
+  if (oversizedFiles.length > 0) {
+    alert(`⚠️ Some files are too large (max 10MB each):\n${oversizedFiles.map(f => f.name).join('\n')}`);
+    selectedMediaFiles = selectedMediaFiles.filter(f => f.size <= maxSize);
+  }
+  
+  if (selectedMediaFiles.length === 0) {
+    document.getElementById('media-preview-container').classList.add('hide');
+    return;
+  }
+  
+  const previewContainer = document.getElementById('media-preview-grid');
+  previewContainer.innerHTML = '';
+  
+  selectedMediaFiles.forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const isVideo = file.type.startsWith('video/');
+      const preview = document.createElement('div');
+      preview.className = 'media-preview-item';
+      preview.innerHTML = `
+        ${isVideo ? 
+          `<video src="${e.target.result}" style="pointer-events: none;"></video>` :
+          `<img src="${e.target.result}" alt="Preview" />`
+        }
+        <button class="media-preview-remove" onclick="removeMedia(${index})">×</button>
+      `;
+      previewContainer.appendChild(preview);
+    };
+    reader.readAsDataURL(file);
+  });
+  
+  document.getElementById('media-preview-container').classList.remove('hide');
+}
+
+function removeMedia(index) {
+  selectedMediaFiles.splice(index, 1);
+  
+  if (selectedMediaFiles.length === 0) {
+    document.getElementById('media-preview-container').classList.add('hide');
+    document.getElementById('post-media-input').value = '';
+    return;
+  }
+  
+  const dt = new DataTransfer();
+  selectedMediaFiles.forEach(file => dt.items.add(file));
+  document.getElementById('post-media-input').files = dt.files;
+  handleMediaSelection(selectedMediaFiles);
+}
+
+async function submitPost() {
+  const content = document.getElementById('post-content').value.trim();
+  
+  if (!content && selectedMediaFiles.length === 0) {
+    alert('⚠️ Please add some text or media to your post');
+    return;
+  }
+  
+  const submitBtn = document.getElementById('submit-post-btn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = '⏳ Posting...';
+  
+  try {
+    let mediaUrls = [];
+    let mediaTypes = [];
+    
+    if (selectedMediaFiles.length > 0) {
+      document.getElementById('upload-progress-container').classList.remove('hide');
+      
+      for (let i = 0; i < selectedMediaFiles.length; i++) {
+        const file = selectedMediaFiles[i];
+        const progressText = document.getElementById('upload-progress-text');
+        progressText.textContent = `Uploading ${i + 1}/${selectedMediaFiles.length}...`;
+        
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${currentUser.id}/${Date.now()}_${i}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('post-media')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (error) throw error;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('post-media')
+          .getPublicUrl(fileName);
+        
+        mediaUrls.push(publicUrl);
+        mediaTypes.push(file.type.startsWith('video/') ? 'video' : 'image');
+      }
+    }
+    
+    const { error: postError } = await supabase
+      .from('posts')
+      .insert({
+        user_id: currentUser.id,
+        content: content || null,
+        media_urls: mediaUrls.length > 0 ? mediaUrls : null,
+        media_types: mediaTypes.length > 0 ? mediaTypes : null,
+        likes_count: 0,
+        comments_count: 0,
+        is_active: true,
+        created_at: new Date().toISOString()
+      });
+    
+    if (postError) throw postError;
+    
+    showNotification('✅ Success', 'Post created successfully!', 'success');
+    closeCreatePost();
+    await loadPosts(currentPostFilter);
+    
+  } catch (error) {
+    console.error('Error creating post:', error);
+    alert('❌ Failed to create post: ' + (error.message || 'Unknown error'));
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '📤 Post';
+    document.getElementById('upload-progress-container').classList.add('hide');
+  }
+}
+
+async function toggleLike(postId) {
+  const button = document.querySelector(`.post-action-btn[data-post-id="${postId}"]`);
+  const isLiked = button.classList.contains('liked');
+  
+  try {
+    if (isLiked) {
+      await supabase
+        .from('post_likes')
+        .delete()
+        .eq('post_id', postId)
+        .eq('user_id', currentUser.id);
+      
+      await supabase.rpc('decrement_likes', { post_id: postId });
+      
+      button.classList.remove('liked');
+      button.querySelector('.icon').textContent = '🤍';
+    } else {
+      await supabase
+        .from('post_likes')
+        .insert({
+          post_id: postId,
+          user_id: currentUser.id,
+          created_at: new Date().toISOString()
+        });
+      
+      await supabase.rpc('increment_likes', { post_id: postId });
+      
+      button.classList.add('liked');
+      button.querySelector('.icon').textContent = '❤️';
+    }
+    
+    const { data } = await supabase
+      .from('posts')
+      .select('likes_count')
+      .eq('id', postId)
+      .single();
+    
+    if (data) {
+      button.querySelector('.count').textContent = data.likes_count || 0;
+    }
+    
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    alert('❌ Failed to update like');
+  }
+}
+
+async function openComments(postId) {
+  currentViewingPostId = postId;
+  document.getElementById('comments-modal').classList.remove('hide');
+  document.getElementById('comment-input').value = '';
+  await loadComments(postId);
+}
+
+function closeCommentsModal() {
+  document.getElementById('comments-modal').classList.add('hide');
+  currentViewingPostId = null;
+}
+
+async function loadComments(postId) {
+  const container = document.getElementById('comments-list');
+  
+  try {
+    const { data: comments, error } = await supabase
+      .from('post_comments')
+      .select(`
+        *,
+        users!post_comments_user_id_fkey (id, full_name)
+      `)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
+    
+    if (error) throw error;
+    
+    if (!comments || comments.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-8 text-gray-400">
+          <div class="text-4xl mb-2">💬</div>
+          <div>No comments yet. Be the first to comment!</div>
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = comments.map(comment => {
+      const userInitial = comment.users?.full_name?.charAt(0).toUpperCase() || '👤';
+      const timeAgo = getTimeAgo(comment.created_at);
+      
+      return `
+        <div class="comment-item">
+          <div class="comment-avatar">${userInitial}</div>
+          <div class="comment-content">
+            <div class="comment-author">${escapeHtml(comment.users?.full_name || 'User')}</div>
+            <div class="comment-text">${escapeHtml(comment.content)}</div>
+            <div class="comment-time">${timeAgo}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+  } catch (error) {
+    console.error('Error loading comments:', error);
+    container.innerHTML = '<div class="text-center text-red-600">Failed to load comments</div>';
+  }
+}
+
+async function submitComment() {
+  const input = document.getElementById('comment-input');
+  const content = input.value.trim();
+  
+  if (!content) return;
+  
+  try {
+    const { error } = await supabase
+      .from('post_comments')
+      .insert({
+        post_id: currentViewingPostId,
+        user_id: currentUser.id,
+        content: content,
+        created_at: new Date().toISOString()
+      });
+    
+    if (error) throw error;
+    
+    await supabase.rpc('increment_comments', { post_id: currentViewingPostId });
+    
+    input.value = '';
+    await loadComments(currentViewingPostId);
+    await loadPosts(currentPostFilter);
+    
+  } catch (error) {
+    console.error('Error posting comment:', error);
+    alert('❌ Failed to post comment');
+  }
+}
+
+async function deletePost(postId) {
+  if (!confirm('🗑️ Are you sure you want to delete this post?')) return;
+  
+  try {
+    const { data: post } = await supabase
+      .from('posts')
+      .select('media_urls')
+      .eq('id', postId)
+      .single();
+    
+    if (post?.media_urls) {
+      for (const url of post.media_urls) {
+        const path = url.split('/post-media/')[1];
+        if (path) {
+          await supabase.storage.from('post-media').remove([path]);
+        }
+      }
+    }
+    
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', postId)
+      .eq('user_id', currentUser.id);
+    
+    if (error) throw error;
+    
+    showNotification('✅ Success', 'Post deleted successfully', 'success');
+    await loadPosts(currentPostFilter);
+    
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    alert('❌ Failed to delete post');
+  }
+}
+
+function sharePost(postId) {
+  const shareUrl = `${window.location.origin}/?post=${postId}`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: 'Seva Community Post',
+      text: 'Check out this post from Seva!',
+      url: shareUrl
+    }).catch(err => console.log('Share cancelled:', err));
+  } else {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showNotification('✅ Link Copied', 'Post link copied to clipboard!', 'success');
+    });
+  }
+}
+
+function openMediaLightbox(url, type) {
+  const lightbox = document.getElementById('media-lightbox');
+  const content = document.getElementById('lightbox-content');
+  
+  if (type === 'video') {
+    content.innerHTML = `<video src="${escapeHtml(url)}" controls autoplay style="max-width: 100%; max-height: 90vh;"></video>`;
+  } else {
+    content.innerHTML = `<img src="${escapeHtml(url)}" alt="Full size" style="max-width: 100%; max-height: 90vh;" />`;
+  }
+  
+  lightbox.classList.remove('hide');
+}
+
+function closeLightbox() {
+  const lightbox = document.getElementById('media-lightbox');
+  lightbox.classList.add('hide');
+  document.getElementById('lightbox-content').innerHTML = '';
+}
+
+function subscribeToPostUpdates() {
+  if (postsSubscription) {
+    postsSubscription.unsubscribe();
+  }
+  
+  postsSubscription = supabase
+    .channel('posts_changes')
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'posts' },
+      () => {
+        if (currentTab === 'community') {
+          loadPosts(currentPostFilter);
+        }
+      }
+    )
+    .subscribe();
+}
+
+function getTimeAgo(timestamp) {
+  const now = new Date();
+  const past = new Date(timestamp);
+  const diffMs = now - past;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  
+  return past.toLocaleDateString();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const postContentInput = document.getElementById('post-content');
+  if (postContentInput) {
+    postContentInput.addEventListener('input', function() {
+      const count = this.value.length;
+      document.getElementById('post-char-count').textContent = count;
+    });
+  }
+});
+
+console.log('✅ Community Feed Module Loaded');
 
 </script>
 </body>
