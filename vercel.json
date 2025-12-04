@@ -1,9 +1,15 @@
 {
   "version": 2,
   "name": "seva-food-donation",
+  "public": true,
+  "github": {
+    "silent": true
+  },
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/((?!api|icons|screenshots|sw\\.js|site\\.webmanifest|manifest\\.json|favicon\\.ico|_next|.*\\.).*)",
+      "source": "/((?!api|icons|screenshots|sw\\.js|site\\.webmanifest|manifest\\.json|favicon\\.ico|_next|static|.*\\.).*)",
       "destination": "/index.html"
     }
   ],
@@ -125,6 +131,11 @@
     {
       "source": "/nearby",
       "destination": "/?tab=nearby",
+      "permanent": false
+    },
+    {
+      "source": "/community",
+      "destination": "/?tab=community",
       "permanent": false
     },
     {
